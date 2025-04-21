@@ -1,0 +1,25 @@
+/**
+ * For more details on how to configure Wrangler, refer to:
+ * https://developers.cloudflare.com/workers/wrangler/configuration/
+ */
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "cf-best-practices-repository",
+	"main": "src/index.js",
+	"compatibility_date": "2025-04-21",
+	"compatibility_flags": ["nodejs_compat"],
+	"assets": {
+		"binding": "ASSETS",
+		"directory": "./public"
+	},
+	"observability": {
+		"enabled": true
+	},
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "D1_DB_L7_BEST_PRACTICES",
+			"database_id": "b1043e65-a259-4772-82a1-9e38e275a0b3"
+		}
+	]
+}

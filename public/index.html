@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Cloudflare Best Practices</title>
+		<link rel="stylesheet" href="/style.css" />
+		<link
+			rel="icon"
+			href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛡️</text></svg>"
+		/>
+	</head>
+	<body>
+		<header>
+			<h1>🛡️ Cloudflare L7 Best Practices</h1>
+		</header>
+
+		<main>
+			<div class="filters">
+				<input type="search" id="searchInput" placeholder="Search title, description..." />
+				<select id="categoryFilter">
+					<option value="">All Categories</option>
+				</select>
+				<select id="featureFilter">
+					<option value="">All Features</option>
+				</select>
+				<select id="areaFilter">
+					<option value="">All Areas</option>
+					<option value="Security">Security</option>
+					<option value="Performance">Performance</option>
+					<option value="Reliability">Reliability</option>
+					<option value="General">General</option>
+				</select>
+				<select id="levelFilter">
+					<option value="">All Levels</option>
+					<option value="Mandatory">Mandatory</option>
+					<option value="Recommended">Recommended</option>
+					<option value="Optional">Optional</option>
+					<option value="Situational">Situational</option>
+				</select>
+				<button id="resetFilters" title="Reset Filters">🔄</button>
+			</div>
+
+			<div class="table-container">
+				<table>
+					<thead>
+						<tr>
+							<th>Title</th>
+							<th>Category</th>
+							<th>Area</th>
+							<th>Level</th>
+							<th>Description</th>
+							<th>Feature</th>
+							<th>Config / Expression</th>
+							<th>Source</th>
+							<th>Notes</th>
+						</tr>
+					</thead>
+					<tbody id="practicesTableBody">
+						<tr>
+							<td colspan="9">Loading...</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+			<p id="errorMessage" class="error-message" style="display: none"></p>
+		</main>
+
+		<footer>
+			<p>Data served via Cloudflare Workers & D1</p>
+		</footer>
+
+		<script src="/app.js" type="module"></script>
+	</body>
+</html>
