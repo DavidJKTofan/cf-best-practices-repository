@@ -3,6 +3,8 @@
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta name="description" content="Cloudflare L7 Best Practices Repository - A collection of security, performance, and reliability best practices for Cloudflare configurations" />
+		<meta name="theme-color" content="#f6821f" />
 		<title>Cloudflare Best Practices</title>
 		<link rel="stylesheet" href="/style.css" />
 		<link
@@ -16,54 +18,54 @@
 		</header>
 
 		<main>
-			<div class="filters">
-				<input type="search" id="searchInput" placeholder="Search title, description..." />
-				<select id="categoryFilter">
+			<div class="filters" role="search">
+				<input type="search" id="searchInput" placeholder="Search title, description..." aria-label="Search practices" />
+				<select id="categoryFilter" aria-label="Filter by category">
 					<option value="">All Categories</option>
 				</select>
-				<select id="featureFilter">
+				<select id="featureFilter" aria-label="Filter by feature">
 					<option value="">All Features</option>
 				</select>
-				<select id="areaFilter">
+				<select id="areaFilter" aria-label="Filter by area">
 					<option value="">All Areas</option>
 					<option value="Security">Security</option>
 					<option value="Performance">Performance</option>
 					<option value="Reliability">Reliability</option>
 					<option value="General">General</option>
 				</select>
-				<select id="levelFilter">
+				<select id="levelFilter" aria-label="Filter by recommendation level">
 					<option value="">All Levels</option>
 					<option value="Mandatory">Mandatory</option>
 					<option value="Recommended">Recommended</option>
 					<option value="Optional">Optional</option>
 					<option value="Situational">Situational</option>
 				</select>
-				<button id="resetFilters" title="Reset Filters">🔄</button>
+				<button id="resetFilters" title="Reset all filters" aria-label="Reset all filters">🔄</button>
 			</div>
 
-			<div class="table-container">
+			<div class="table-container" role="region" aria-label="Best practices list">
 				<table>
 					<thead>
 						<tr>
-							<th>Title</th>
-							<th>Category</th>
-							<th>Area</th>
-							<th>Level</th>
-							<th>Description</th>
-							<th>Feature</th>
-							<th>Config / Expression</th>
-							<th>Source</th>
-							<th>Notes</th>
+							<th scope="col">Title</th>
+							<th scope="col">Category</th>
+							<th scope="col">Area</th>
+							<th scope="col">Level</th>
+							<th scope="col">Description</th>
+							<th scope="col">Feature</th>
+							<th scope="col">Config / Expression</th>
+							<th scope="col">Source</th>
+							<th scope="col" class="notes-column">Notes</th>
 						</tr>
 					</thead>
 					<tbody id="practicesTableBody">
 						<tr>
-							<td colspan="9">Loading...</td>
+							<td colspan="9"><div class="loading">Loading practices...</div></td>
 						</tr>
 					</tbody>
 				</table>
 			</div>
-			<p id="errorMessage" class="error-message" style="display: none"></p>
+			<div id="errorMessage" class="error-message" style="display: none" role="alert"></div>
 		</main>
 
 		<footer>
