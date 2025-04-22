@@ -59,36 +59,30 @@ function renderTable(practices) {
 
 	tableBody.innerHTML = practices
 		.map((p) => {
-			// Check if source_reference is a URL
-			const isSourceUrl =
-				p.source_reference &&
-				(p.source_reference.startsWith('http://') || p.source_reference.startsWith('https://') || p.source_reference.startsWith('www.'));
+			const isSourceUrl = p.source_reference &&
+				p.source_reference.startsWith('https://');
 
 			return `
                 <tr>
                     <td>${escapeHTML(p.title)}</td>
                     <td>${escapeHTML(p.category_name || 'N/A')}</td>
-                    <td>${escapeHTML(p.area)}</td>
+                    <td>${escapeHTML(p.domain)}</td>
                     <td>${escapeHTML(p.recommendation_level)}</td>
+                    <td>${escapeHTML(p.impact_level || 'N/A')}</td>
+                    <td>${escapeHTML(p.difficulty_level || 'N/A')}</td>
                     <td>${escapeHTML(p.description)}</td>
-                    <td>${
-											p.feature_url
-												? `<a href="${escapeHTML(p.feature_url)}" target="_blank" rel="external noopener noreferrer">${escapeHTML(
+                    <td>${escapeHTML(p.prerequisites || 'N/A')}</td>
+                    <td>${p.feature_url
+											? `<a href="${escapeHTML(p.feature_url)}" target="_blank" rel="external noopener noreferrer">${escapeHTML(
 														p.feature_name || 'Link'
 												  )}</a>`
-												: escapeHTML(p.feature_name || 'N/A')
-										}</td>
+											: escapeHTML(p.feature_name || 'N/A')}</td>
                     <td><code>${escapeHTML(p.expressions_configuration_details || 'N/A')}</code></td>
-                    <td>${
-											isSourceUrl
-												? `<a href="${escapeHTML(p.source_reference)}" target="_blank" rel="external noopener noreferrer">${escapeHTML(
-														p.source_reference
-												  )}</a>`
-												: escapeHTML(p.source_reference || 'N/A')
-										}</td>
+                    <td>${isSourceUrl
+											? `<a href="${escapeHTML(p.source_reference)}" target="_blank" rel="external noopener noreferrer">Documentation</a>`
+											: escapeHTML(p.source_reference || 'N/A')}</td>
                     <td>${escapeHTML(p.notes || '')}</td>
-                </tr>
-                `;
+                </tr>`;
 		})
 		.join('');
 }

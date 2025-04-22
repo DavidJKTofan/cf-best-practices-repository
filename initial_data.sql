@@ -30,7 +30,7 @@ INSERT INTO Categories (category_id, name, description, display_order) VALUES
 
 -- Insert Cloudflare Features
 INSERT INTO CloudflareFeatures (feature_id, name, feature_url, subscription_level) VALUES
-(1, 'DNSSEC', 'https://developers.cloudflare.com/dns/additional-options/dnssec/', 'Free'),
+(1, 'DNS', 'https://developers.cloudflare.com/dns/', 'Free'),
 (2, 'WAF', 'https://developers.cloudflare.com/waf/', 'Pro'),
 (3, 'Rate Limiting Rules', 'https://developers.cloudflare.com/waf/rate-limiting-rules/', 'Pro'),
 (4, 'Bot Management', 'https://developers.cloudflare.com/bots/', 'Enterprise'),
@@ -273,16 +273,16 @@ INSERT INTO BestPractices (title, description, domain, category_id, feature_id, 
 ('Use Terraform for Infrastructure as Code (IaC)', 'Manage Cloudflare configurations using the Cloudflare Terraform Provider for automation, version control, and consistency.', 'General', 12, 12, 'Recommended', NULL, NULL, NULL, NULL, 'https://developers.cloudflare.com/terraform/');
 
 INSERT INTO BestPractices (title, description, domain, category_id, feature_id, recommendation_level, impact_level, difficulty_level, prerequisites, expressions_configuration_details, source_reference) VALUES
-('Use Cloudflare API or SDKs for Automation', 'Leverage the Cloudflare API or official SDKs for custom automation scripts and integrations.', 'General', 12, 13, 'Recommended', NULL, NULL, NULL, NULL, 'https://developers.cloudflare.com/fundamentals/api/reference/sdks/');
+('Use Cloudflare API or SDKs for Automation', 'Leverage the Cloudflare API or official SDKs for custom automation scripts and integrations.', 'General', 12, 13, 'Recommended', NULL, 'Medium', 'Prior knowledge in SDKs or programming is recommended', NULL, 'https://developers.cloudflare.com/fundamentals/api/reference/sdks/');
 
 INSERT INTO BestPractices (title, description, domain, category_id, feature_id, recommendation_level, impact_level, difficulty_level, prerequisites, expressions_configuration_details, source_reference, notes) VALUES
-('Follow Principle of Least Privilege for Users and Tokens', 'Assign users and API Tokens only the minimum required permissions using specific Roles and scoped tokens.', 'Security', 12, 13, 'Mandatory', NULL, NULL, NULL, NULL, 'https://developers.cloudflare.com/fundamentals/setup/manage-members/', 'Use Roles for Dashboard UI access and configure API Token permissions separately. Leverage Account Owned Tokens. Enterprise customers can also configure Single-Sign-On (SSO) for the Cloudflare Dashboard.');
+('Follow Principle of Least Privilege for Users and Tokens', 'Assign users and API Tokens only the minimum required permissions using specific Roles and scoped tokens.', 'Security', 12, 13, 'Mandatory', NULL, 'High', NULL, NULL, 'https://developers.cloudflare.com/fundamentals/setup/manage-members/', 'Use Roles for Dashboard UI access and configure API Token permissions separately. Leverage Account Owned Tokens. Enterprise customers can also configure Single-Sign-On (SSO) for the Cloudflare Dashboard.');
 
 INSERT INTO BestPractices (title, description, domain, category_id, feature_id, recommendation_level, impact_level, difficulty_level, prerequisites, expressions_configuration_details, source_reference, notes) VALUES
-('Enforce Multi-Factor Authentication (MFA)', 'Require MFA for all users accessing the Cloudflare dashboard.', 'Security', 12, NULL, 'Mandatory', NULL, NULL, NULL, NULL, 'https://developers.cloudflare.com/fundamentals/setup/account/account-security/2fa/', 'Enterprise customers can also configure Single-Sign-On (SSO) for the Cloudflare Dashboard.');
+('Enforce Multi-Factor Authentication (MFA)', 'Require MFA for all users accessing the Cloudflare dashboard.', 'Security', 12, NULL, 'Mandatory', NULL, 'High', NULL, NULL, 'https://developers.cloudflare.com/fundamentals/setup/account/account-security/2fa/', 'MFA is often a compliance requirement. Enterprise customers can also configure Single-Sign-On (SSO) for the Cloudflare Dashboard.');
 
 INSERT INTO BestPractices (title, description, domain, category_id, feature_id, recommendation_level, impact_level, difficulty_level, prerequisites, expressions_configuration_details, source_reference, notes) VALUES
-('Integrate Single Sign-On (SSO)', 'If applicable, integrate your identity provider (IdP) with Cloudflare for SSO dashboard access.', 'Security', 12, NULL, 'Recommended', NULL, NULL, NULL, NULL, 'https://developers.cloudflare.com/cloudflare-one/applications/configure-apps/dash-sso-apps/', 'Review the Cloudflare SSO documentation for best practices.');
+('Integrate Single Sign-On (SSO)', 'If applicable, integrate your identity provider (IdP) with Cloudflare for SSO dashboard access.', 'Security', 12, NULL, 'Recommended', NULL, 'High', 'Requires a valid Identity Provider (IdP)', NULL, 'https://developers.cloudflare.com/cloudflare-one/applications/configure-apps/dash-sso-apps/', 'Review the Cloudflare SSO documentation for best practices, especially backups (break-glass).');
 
 INSERT INTO BestPractices (title, description, domain, category_id, feature_id, recommendation_level, impact_level, difficulty_level, prerequisites, expressions_configuration_details, source_reference) VALUES
 ('Regularly Review Audit Logs', 'Periodically review Cloudflare Audit Logs to monitor configuration changes and detect suspicious activity.', 'Security', 11, NULL, 'Recommended', NULL, NULL, NULL, NULL, 'https://developers.cloudflare.com/fundamentals/setup/account/account-security/review-audit-logs/');
@@ -292,7 +292,7 @@ INSERT INTO BestPractices (title, description, domain, category_id, feature_id, 
 -- Origin Protection
 -- ==================
 INSERT INTO BestPractices (title, description, domain, category_id, feature_id, recommendation_level, impact_level, difficulty_level, prerequisites, expressions_configuration_details, source_reference, notes) VALUES
-('Proxy DNS Records', 'Ensure all relevant DNS records pointing to your origin are proxied (orange-clouded) through Cloudflare to hide origin IPs and apply application services.', 'Security', 7, NULL, 'Mandatory', NULL, NULL, NULL, NULL, 'https://developers.cloudflare.com/dns/proxy-status/', 'Avoid grey-clouding unless for specific non-HTTP use cases and really necessary.');
+('Proxy DNS Records', 'Ensure all relevant DNS records pointing to your origin are proxied (orange-clouded) through Cloudflare to hide origin IPs and apply application services.', 'Security', 7, NULL, 'Mandatory', 'High', 'Easy', 'Cloudflare must manage the DNS records', NULL, 'https://developers.cloudflare.com/dns/proxy-status/', 'Avoid grey-clouding unless for specific non-HTTP use cases and really necessary.');
 
 INSERT INTO BestPractices (title, description, domain, category_id, feature_id, recommendation_level, impact_level, difficulty_level, prerequisites, expressions_configuration_details, source_reference, notes) VALUES
 ('Use Authenticated Origin Pulls (mTLS)', 'Configure mTLS between Cloudflare edge and your origin server to ensure requests are genuinely from your Cloudflare account.', 'Security', 7, 10, 'Recommended', NULL, NULL, NULL, NULL, 'https://developers.cloudflare.com/ssl/origin-configuration/authenticated-origin-pull/', 'Review the Cloudflare documentation and follow the best practices.');

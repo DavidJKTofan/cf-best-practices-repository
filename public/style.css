@@ -190,42 +190,18 @@ tbody tr:hover td:first-child {
 }
 
 /* Give key columns more appropriate widths */
-th:nth-child(1),
-td:nth-child(1) {
-	min-width: 200px;
-} /* Title */
-th:nth-child(2),
-td:nth-child(2) {
-	min-width: 120px;
-} /* Category */
-th:nth-child(3),
-td:nth-child(3) {
-	min-width: 100px;
-} /* Area */
-th:nth-child(4),
-td:nth-child(4) {
-	min-width: 110px;
-} /* Level */
-th:nth-child(5),
-td:nth-child(5) {
-	min-width: 250px;
-} /* Description */
-th:nth-child(6),
-td:nth-child(6) {
-	min-width: 150px;
-} /* Feature */
-th:nth-child(7),
-td:nth-child(7) {
-	min-width: 200px;
-} /* Config */
-th:nth-child(8),
-td:nth-child(8) {
-	min-width: 150px;
-} /* Source */
-th:nth-child(9),
-td:nth-child(9) {
-	min-width: 300px;
-} /* Notes - Wider */
+th:nth-child(1), td:nth-child(1) { min-width: 200px; } /* Title */
+th:nth-child(2), td:nth-child(2) { min-width: 120px; } /* Category */
+th:nth-child(3), td:nth-child(3) { min-width: 100px; } /* Domain */
+th:nth-child(4), td:nth-child(4) { min-width: 110px; } /* Level */
+th:nth-child(5), td:nth-child(5) { min-width: 80px; }  /* Impact */
+th:nth-child(6), td:nth-child(6) { min-width: 90px; }  /* Difficulty */
+th:nth-child(7), td:nth-child(7) { min-width: 250px; } /* Description */
+th:nth-child(8), td:nth-child(8) { min-width: 150px; } /* Prerequisites */
+th:nth-child(9), td:nth-child(9) { min-width: 150px; } /* Feature */
+th:nth-child(10), td:nth-child(10) { min-width: 200px; } /* Config */
+th:nth-child(11), td:nth-child(11) { min-width: 150px; } /* Source */
+th:nth-child(12), td:nth-child(12) { min-width: 300px; } /* Notes */
 
 /* Code blocks and links styling */
 td code {
@@ -317,16 +293,16 @@ footer {
 	}
 
 	/* Hide less important columns on medium screens */
-	th:nth-child(n + 6),
-	td:nth-child(n + 6) {
+	th:nth-child(n + 7),
+	td:nth-child(n + 7) {
 		display: none;
 	}
 }
 
 @media (max-width: 480px) {
 	/* Further reduce visible columns on very small screens */
-	th:nth-child(n + 4),
-	td:nth-child(n + 4) {
+	th:nth-child(n + 5),
+	td:nth-child(n + 5) {
 		display: none;
 	}
 

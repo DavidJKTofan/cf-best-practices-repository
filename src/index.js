@@ -108,10 +108,11 @@ export default {
 
 				let query = `
 			SELECT
-			  bp.practice_id, bp.title, bp.description, bp.area,
+			  bp.practice_id, bp.title, bp.description, bp.domain,
 			  cat.name AS category_name,
 			  cf.name AS feature_name, cf.feature_url,
-			  bp.recommendation_level, bp.expressions_configuration_details,
+			  bp.recommendation_level, bp.impact_level, bp.difficulty_level,
+			  bp.prerequisites, bp.expressions_configuration_details,
 			  bp.source_reference, bp.notes, bp.updated_at
 			FROM BestPractices bp
 			LEFT JOIN Categories cat ON bp.category_id = cat.category_id
@@ -142,7 +143,7 @@ export default {
 				}
 
 				if (area && validateQueryParam(area, validAreas)) {
-					conditions.push('bp.area = ?');
+					conditions.push('bp.domain = ?');
 					params.push(area);
 				}
 
@@ -155,7 +156,7 @@ export default {
 					query += ' WHERE ' + conditions.join(' AND ');
 				}
 
-				query += ' ORDER BY bp.area, category_name, bp.title';
+				query += ' ORDER BY bp.domain, category_name, bp.title';
 
 				console.log(`Executing query: ${query.replace(/\s+/g, ' ')} with params: ${JSON.stringify(params)}`);
 				const stmt = db.prepare(query).bind(...params);
