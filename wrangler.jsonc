@@ -21,5 +21,13 @@
 			"database_name": "D1_DB_L7_BEST_PRACTICES",
 			"database_id": "fff37b78-990d-423c-a110-5cf786549f6f"
 		}
-	]
+	],
+	"routes": [
+		{
+			"pattern": "db.automatic-demo.com",
+			"custom_domain": true
+		}
+	],
+	"workers_dev": true,
+	"preview_urls": true
 }

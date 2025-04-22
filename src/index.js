@@ -75,20 +75,73 @@ export default {
 			return new Response(null, {
 				headers: {
 					'Access-Control-Allow-Origin': '*', // Match origins with jsonResponse
-					'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+					'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS, POST',
 					'Access-Control-Allow-Headers': 'Content-Type', // Or specify requested headers
 					'Access-Control-Max-Age': '86400', // Cache preflight response for 1 day
 				},
 			});
 		}
 
-		// Only handle GET requests for API endpoints
-		if (method !== 'GET') {
-			// Let non-GET requests for non-API paths fall through for static asset handling
-			if (!pathname.startsWith('/api/')) {
-				return new Response('Method Not Allowed (Implicit Static Fallback)', { status: 405 }); // Should be handled by static site logic
+		 // Handle POST requests for /api/practices
+		if (method === 'POST' && pathname === '/api/practices') {
+			try {
+				const body = await request.json();
+				
+				// Validate required fields
+				const requiredFields = ['title', 'description', 'domain', 'recommendation_level', 'impact_level'];
+				const missingFields = requiredFields.filter(field => !body[field]);
+				if (missingFields.length > 0) {
+					return errorResponse(`Missing required fields: ${missingFields.join(', ')}`, 400);
+				}
+
+				// Validate enums
+				if (!validateQueryParam(body.domain, ['Security', 'Performance', 'Reliability', 'General'])) {
+					return errorResponse('Invalid domain value', 400);
+				}
+				if (!validateQueryParam(body.recommendation_level, ['Mandatory', 'Recommended', 'Optional', 'Situational'])) {
+					return errorResponse('Invalid recommendation level', 400);
+				}
+				if (!validateQueryParam(body.impact_level, ['High', 'Medium', 'Low'])) {
+					return errorResponse('Invalid impact level', 400);
+				}
+				if (body.difficulty_level && !validateQueryParam(body.difficulty_level, ['Easy', 'Medium', 'Complex'])) {
+					return errorResponse('Invalid difficulty level', 400);
+				}
+
+				const query = `
+					INSERT INTO BestPractices (
+						title, description, domain, category_id, feature_id,
+						recommendation_level, impact_level, difficulty_level,
+						prerequisites, expressions_configuration_details,
+						source_reference, notes
+					) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+				`;
+
+				const params = [
+					body.title,
+					body.description,
+					body.domain,
+					body.category_id,
+					body.feature_id,
+					body.recommendation_level,
+					body.impact_level,
+					body.difficulty_level,
+					body.prerequisites,
+					body.expressions_configuration_details,
+					body.source_reference,
+					body.notes
+				];
+
+				await db.prepare(query).bind(...params).run();
+				return jsonResponse({ success: true, message: 'Practice created successfully' });
+			} catch (e) {
+				console.error('Error creating practice:', e);
+				return errorResponse('Failed to create practice', 500);
 			}
-			// Explicitly disallow non-GET for API routes
+		}
+
+		// Only handle GET requests for API endpoints
+		if (method !== 'GET' && pathname.startsWith('/api/')) {
 			return errorResponse('Method Not Allowed', 405);
 		}
 

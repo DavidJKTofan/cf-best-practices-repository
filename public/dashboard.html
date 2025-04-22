@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Best Practices Dashboard</title>
+    <link rel="stylesheet" href="/style.css" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <link rel="shortcut icon" href="/favicon.ico">
+    <style>
+        .dashboard-form {
+            background: white;
+            padding: 2rem;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-sm);
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.6rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            font-size: 0.95rem;
+        }
+        
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        
+        .button-group {
+            margin-top: 2rem;
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+        }
+        
+        button[type="submit"] {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: var(--radius);
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+        }
+        
+        button[type="reset"] {
+            background: var(--hover-color);
+            border: 1px solid var(--border-color);
+            padding: 0.8rem 1.5rem;
+            border-radius: var(--radius);
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        
+        .success-message {
+            background-color: #dcfce7;
+            color: #166534;
+            padding: 1rem;
+            border-radius: var(--radius);
+            margin-top: 1rem;
+            border-left: 4px solid #22c55e;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🛡️ Best Practices Dashboard</h1>
+    </header>
+
+    <main>
+        <div class="dashboard-form">
+            <form id="practiceForm">
+                <div class="form-group">
+                    <label for="title">Title *</label>
+                    <input type="text" id="title" name="title" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="description">Description *</label>
+                    <textarea id="description" name="description" required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="domain">Domain *</label>
+                    <select id="domain" name="domain" required>
+                        <option value="">Select Domain</option>
+                        <option value="Security">Security</option>
+                        <option value="Performance">Performance</option>
+                        <option value="Reliability">Reliability</option>
+                        <option value="General">General</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="category">Category</label>
+                    <select id="category" name="category">
+                        <option value="">Select Category</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="feature">Feature</label>
+                    <select id="feature" name="feature">
+                        <option value="">Select Feature</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="recommendationLevel">Recommendation Level *</label>
+                    <select id="recommendationLevel" name="recommendationLevel" required>
+                        <option value="">Select Level</option>
+                        <option value="Mandatory">Mandatory</option>
+                        <option value="Recommended">Recommended</option>
+                        <option value="Optional">Optional</option>
+                        <option value="Situational">Situational</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="impactLevel">Impact Level *</label>
+                    <select id="impactLevel" name="impactLevel" required>
+                        <option value="">Select Impact</option>
+                        <option value="High">High</option>
+                        <option value="Medium">Medium</option>
+                        <option value="Low">Low</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="difficultyLevel">Difficulty Level</label>
+                    <select id="difficultyLevel" name="difficultyLevel">
+                        <option value="">Select Difficulty</option>
+                        <option value="Easy">Easy</option>
+                        <option value="Medium">Medium</option>
+                        <option value="Complex">Complex</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="prerequisites">Prerequisites</label>
+                    <textarea id="prerequisites" name="prerequisites"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="configuration">Configuration Details</label>
+                    <textarea id="configuration" name="configuration"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="sourceReference">Source Reference</label>
+                    <input type="text" id="sourceReference" name="sourceReference">
+                </div>
+
+                <div class="form-group">
+                    <label for="notes">Notes</label>
+                    <textarea id="notes" name="notes"></textarea>
+                </div>
+
+                <div class="button-group">
+                    <button type="reset">Reset</button>
+                    <button type="submit">Save Practice</button>
+                </div>
+            </form>
+            <div id="successMessage" class="success-message">
+                Practice saved successfully!
+            </div>
+            <div id="errorMessage" class="error-message" style="display: none"></div>
+        </div>
+    </main>
+
+    <footer>
+        <p>Data served via Cloudflare Workers & D1</p>
+        <p><a href="https://github.com/DavidJKTofan/cf-best-practices-repository" target="_blank" rel="noopener noreferrer">GitHub Repository</a></p>
+        <p><small>This is a personal project for educational purposes only.</small></p>
+    </footer>
+
+    <script src="/dashboard.js" type="module"></script>
+</body>
+</html>
