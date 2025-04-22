@@ -70,7 +70,7 @@ CREATE TABLE BestPractices (
     feature_id INTEGER, 
     recommendation_level TEXT CHECK(recommendation_level IN ('Mandatory', 'Recommended', 'Optional', 'Situational')),
     impact_level TEXT CHECK(impact_level IN ('High', 'Medium', 'Low')),
-    difficulty_level TEXT CHECK(difficulty_level IN ('Easy', 'Medium', 'Complex')),
+    difficulty_level TEXT CHECK(difficulty_level IN ('Easy', 'Medium', 'Complex', NULL)),
     prerequisites TEXT,
     expressions_configuration_details TEXT, 
     source_reference TEXT, 
@@ -89,9 +89,9 @@ execute_sql "CREATE INDEX idx_bestpractices_domain ON BestPractices(domain);" ||
 execute_sql "CREATE INDEX idx_bestpractices_impact ON BestPractices(impact_level);" || exit 1
 
 # Create Trigger for updated_at
-log_message "INFO" "Creating triggers..."
-UPDATE_TRIGGER_SQL="CREATE TRIGGER IF NOT EXISTS update_bestpractices_updated_at AFTER UPDATE ON BestPractices FOR EACH ROW BEGIN UPDATE BestPractices SET updated_at = CURRENT_TIMESTAMP WHERE practice_id = OLD.practice_id; END;"
-execute_sql "$UPDATE_TRIGGER_SQL" || exit 1
+# log_message "INFO" "Creating triggers..."
+# UPDATE_TRIGGER_SQL="CREATE TRIGGER IF NOT EXISTS update_bestpractices_updated_at AFTER UPDATE ON BestPractices FOR EACH ROW BEGIN UPDATE BestPractices SET updated_at = CURRENT_TIMESTAMP WHERE practice_id = OLD.practice_id; END;"
+# execute_sql "$UPDATE_TRIGGER_SQL" || exit 1
 
 log_message "INFO" "Uploading initial data..."
 output=$(npx wrangler d1 execute "$DATABASE_NAME" --file=./initial_data.sql --remote 2>&1)

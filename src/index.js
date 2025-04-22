@@ -105,6 +105,7 @@ export default {
 				// Validate parameters based on schema constraints
 				const validAreas = ['Security', 'Performance', 'Reliability', 'General'];
 				const validLevels = ['Mandatory', 'Recommended', 'Optional', 'Situational'];
+				const validImpacts = ['High', 'Medium', 'Low'];
 
 				let query = `
 			SELECT
@@ -150,6 +151,12 @@ export default {
 				if (level && validateQueryParam(level, validLevels)) {
 					conditions.push('bp.recommendation_level = ?');
 					params.push(level);
+				}
+
+				const impact = searchParams.get('impact');
+				if (impact && validateQueryParam(impact, validImpacts)) {
+					conditions.push('bp.impact_level = ?');
+					params.push(impact);
 				}
 
 				if (conditions.length > 0) {

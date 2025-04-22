@@ -9,6 +9,7 @@ const categoryFilter = document.getElementById('categoryFilter');
 const featureFilter = document.getElementById('featureFilter');
 const areaFilter = document.getElementById('areaFilter');
 const levelFilter = document.getElementById('levelFilter');
+const impactFilter = document.getElementById('impactFilter');
 const resetFiltersButton = document.getElementById('resetFilters');
 const errorMessage = document.getElementById('errorMessage');
 
@@ -110,12 +111,14 @@ async function loadPractices() {
 	const selectedFeatureId = featureFilter.value;
 	const selectedArea = areaFilter.value;
 	const selectedLevel = levelFilter.value;
+	const selectedImpact = impactFilter.value;
 
 	if (searchTerm) params.append('search', searchTerm);
 	if (selectedCategoryId) params.append('categoryId', selectedCategoryId);
 	if (selectedFeatureId) params.append('featureId', selectedFeatureId);
 	if (selectedArea) params.append('area', selectedArea);
 	if (selectedLevel) params.append('level', selectedLevel);
+	if (selectedImpact) params.append('impact', selectedImpact);
 
 	const practices = await fetchData(`${API_BASE}/practices?${params.toString()}`);
 	if (practices !== null) {
@@ -134,6 +137,7 @@ function resetAllFilters() {
 	featureFilter.value = '';
 	areaFilter.value = '';
 	levelFilter.value = '';
+	impactFilter.value = '';
 	loadPractices(); // Reload data with no filters
 }
 
@@ -143,6 +147,7 @@ categoryFilter.addEventListener('change', loadPractices);
 featureFilter.addEventListener('change', loadPractices);
 areaFilter.addEventListener('change', loadPractices);
 levelFilter.addEventListener('change', loadPractices);
+impactFilter.addEventListener('change', loadPractices);
 resetFiltersButton.addEventListener('click', resetAllFilters);
 
 function debounce(func, wait) {
