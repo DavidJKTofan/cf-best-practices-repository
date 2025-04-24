@@ -79,6 +79,13 @@
             border-left: 4px solid #22c55e;
             display: none;
         }
+
+        .helper-text {
+            display: block;
+            color: #6b7280;
+            font-size: 0.875rem;
+            margin: -0.25rem 0 0.5rem 0;
+        }
     </style>
 </head>
 <body>
@@ -91,16 +98,19 @@
             <form id="practiceForm">
                 <div class="form-group">
                     <label for="title">Title *</label>
+                    <small class="helper-text">A clear, concise name for the best practice</small>
                     <input type="text" id="title" name="title" required>
                 </div>
 
                 <div class="form-group">
                     <label for="description">Description *</label>
+                    <small class="helper-text">Brief explanation of what this practice achieves and why it matters</small>
                     <textarea id="description" name="description" required></textarea>
                 </div>
 
                 <div class="form-group">
                     <label for="domain">Domain *</label>
+                    <small class="helper-text">Main area this practice affects</small>
                     <select id="domain" name="domain" required>
                         <option value="">Select Domain</option>
                         <option value="Security">Security</option>
@@ -112,6 +122,7 @@
 
                 <div class="form-group">
                     <label for="category">Category</label>
+                    <small class="helper-text">Specific subcategory within the domain</small>
                     <select id="category" name="category">
                         <option value="">Select Category</option>
                     </select>
@@ -119,6 +130,7 @@
 
                 <div class="form-group">
                     <label for="feature">Feature</label>
+                    <small class="helper-text">Specific Cloudflare feature this practice relates to</small>
                     <select id="feature" name="feature">
                         <option value="">Select Feature</option>
                     </select>
@@ -126,6 +138,7 @@
 
                 <div class="form-group">
                     <label for="recommendationLevel">Recommendation Level *</label>
+                    <small class="helper-text">How strongly this practice is recommended for implementation</small>
                     <select id="recommendationLevel" name="recommendationLevel" required>
                         <option value="">Select Level</option>
                         <option value="Mandatory">Mandatory</option>
@@ -137,6 +150,7 @@
 
                 <div class="form-group">
                     <label for="impactLevel">Impact Level *</label>
+                    <small class="helper-text">Potential positive effect on security, performance, or reliability</small>
                     <select id="impactLevel" name="impactLevel" required>
                         <option value="">Select Impact</option>
                         <option value="High">High</option>
@@ -147,6 +161,7 @@
 
                 <div class="form-group">
                     <label for="difficultyLevel">Difficulty Level</label>
+                    <small class="helper-text">Easy: ~3 actions, Medium: 4-7 actions, Complex: 8+ actions or advanced knowledge needed</small>
                     <select id="difficultyLevel" name="difficultyLevel">
                         <option value="">Select Difficulty</option>
                         <option value="Easy">Easy</option>
@@ -157,21 +172,25 @@
 
                 <div class="form-group">
                     <label for="prerequisites">Prerequisites</label>
+                    <small class="helper-text">Required settings or features that must be enabled first</small>
                     <textarea id="prerequisites" name="prerequisites"></textarea>
                 </div>
 
                 <div class="form-group">
                     <label for="configuration">Configuration Details</label>
+                    <small class="helper-text">Step-by-step implementation instructions or Rules expressions (Wireshark display filters)</small>
                     <textarea id="configuration" name="configuration"></textarea>
                 </div>
 
                 <div class="form-group">
                     <label for="sourceReference">Source Reference</label>
+                    <small class="helper-text">Link to official documentation or source material</small>
                     <input type="text" id="sourceReference" name="sourceReference">
                 </div>
 
                 <div class="form-group">
                     <label for="notes">Notes</label>
+                    <small class="helper-text">Additional context, warnings, or important considerations</small>
                     <textarea id="notes" name="notes"></textarea>
                 </div>
 
