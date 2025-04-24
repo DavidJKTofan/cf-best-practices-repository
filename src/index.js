@@ -177,9 +177,9 @@ export default {
 				const params = [];
 
 				if (search) {
-					conditions.push('(bp.title LIKE ? OR bp.description LIKE ? OR bp.expressions_configuration_details LIKE ?)');
+					conditions.push('(bp.title LIKE ? OR bp.description LIKE ? OR bp.expressions_configuration_details LIKE ? OR bp.prerequisites LIKE ? OR bp.notes LIKE ?)');
 					const searchTerm = `%${search}%`;
-					params.push(searchTerm, searchTerm, searchTerm);
+					params.push(searchTerm, searchTerm, searchTerm, searchTerm, searchTerm);
 				}
 
 				if (categoryId) {
