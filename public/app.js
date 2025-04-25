@@ -65,24 +65,24 @@ function renderTable(practices) {
 
 			return `
                 <tr>
-                    <td>${escapeHTML(p.title)}</td>
-                    <td>${escapeHTML(p.category_name || 'N/A')}</td>
-                    <td>${escapeHTML(p.domain)}</td>
-                    <td>${escapeHTML(p.recommendation_level)}</td>
-                    <td>${escapeHTML(p.impact_level || 'N/A')}</td>
-                    <td>${escapeHTML(p.difficulty_level || 'N/A')}</td>
-                    <td>${escapeHTML(p.description)}</td>
-                    <td>${escapeHTML(p.prerequisites || 'N/A')}</td>
-                    <td>${p.feature_url
+                    <td data-label="Title">${escapeHTML(p.title)}</td>
+                    <td data-label="Category">${escapeHTML(p.category_name || 'N/A')}</td>
+                    <td data-label="Domain">${escapeHTML(p.domain)}</td>
+                    <td data-label="Level">${escapeHTML(p.recommendation_level)}</td>
+                    <td data-label="Impact">${escapeHTML(p.impact_level || 'N/A')}</td>
+                    <td data-label="Difficulty">${escapeHTML(p.difficulty_level || 'N/A')}</td>
+                    <td data-label="Description">${escapeHTML(p.description)}</td>
+                    <td data-label="Prerequisites">${escapeHTML(p.prerequisites || 'N/A')}</td>
+                    <td data-label="Feature">${p.feature_url
 											? `<a href="${escapeHTML(p.feature_url)}" target="_blank" rel="external noopener noreferrer">${escapeHTML(
 														p.feature_name || 'Link'
 												  )}</a>`
 											: escapeHTML(p.feature_name || 'N/A')}</td>
-                    <td><code>${escapeHTML(p.expressions_configuration_details || 'N/A')}</code></td>
-                    <td>${isSourceUrl
+                    <td data-label="Configuration"><code>${escapeHTML(p.expressions_configuration_details || 'N/A')}</code></td>
+                    <td data-label="Source">${isSourceUrl
 											? `<a href="${escapeHTML(p.source_reference)}" target="_blank" rel="external noopener noreferrer">Documentation</a>`
 											: escapeHTML(p.source_reference || 'N/A')}</td>
-                    <td>${escapeHTML(p.notes || '')}</td>
+                    <td data-label="Notes">${escapeHTML(p.notes || '')}</td>
                 </tr>`;
 		})
 		.join('');

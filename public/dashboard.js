@@ -46,8 +46,14 @@ function showSuccess(message = 'Practice saved successfully!') {
     successMessage.textContent = message;
     successMessage.style.display = 'block';
     errorMessage.style.display = 'none';
+    
+    // Automatically hide after 5 seconds with fade out
     setTimeout(() => {
-        successMessage.style.display = 'none';
+        successMessage.style.opacity = '0';
+        setTimeout(() => {
+            successMessage.style.display = 'none';
+            successMessage.style.opacity = '1';
+        }, 300);
     }, 5000);
 }
 
@@ -59,6 +65,8 @@ function showError(message) {
 
 async function handleSubmit(event) {
     event.preventDefault();
+    const submitButton = form.querySelector('button[type="submit"]');
+    submitButton.classList.add('loading');
     
     const formData = new FormData(form);
     const practice = {
@@ -100,6 +108,8 @@ async function handleSubmit(event) {
     } catch (error) {
         showError(error.message);
         console.error('Submission error:', error);
+    } finally {
+        submitButton.classList.remove('loading');
     }
 }
 
