@@ -88,7 +88,7 @@ export default {
 				const body = await request.json();
 				
 				// Validate required fields
-				const requiredFields = ['title', 'description', 'domain', 'recommendation_level', 'impact_level'];
+				const requiredFields = ['title', 'description', 'domain', 'recommendation_level', 'impact_level', 'category_id', 'feature_id', 'difficulty_level', 'source_reference'];
 				const missingFields = requiredFields.filter(field => !body[field]);
 				if (missingFields.length > 0) {
 					return errorResponse(`Missing required fields: ${missingFields.join(', ')}`, 400);

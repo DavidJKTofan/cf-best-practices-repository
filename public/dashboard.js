@@ -73,14 +73,14 @@ async function handleSubmit(event) {
         title: formData.get('title'),
         description: formData.get('description'),
         domain: formData.get('domain'),
-        category_id: formData.get('category') || null,
-        feature_id: formData.get('feature') || null,
+        category_id: formData.get('category'),
+        feature_id: formData.get('feature'),
         recommendation_level: formData.get('recommendationLevel'),
         impact_level: formData.get('impactLevel'),
-        difficulty_level: formData.get('difficultyLevel') || null,
+        difficulty_level: formData.get('difficultyLevel'),
         prerequisites: formData.get('prerequisites') || null,
         expressions_configuration_details: formData.get('configuration') || null,
-        source_reference: formData.get('sourceReference') || null,
+        source_reference: formData.get('sourceReference'),
         notes: formData.get('notes') || null
     };
 

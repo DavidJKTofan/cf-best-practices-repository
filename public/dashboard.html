@@ -2,137 +2,22 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, minimum-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
     <title>Best Practices Dashboard</title>
     <link rel="stylesheet" href="/style.css" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <link rel="icon" type="image/png" href="/favicon.png">
     <link rel="shortcut icon" href="/favicon.ico">
-    <style>
-        .dashboard-form {
-            background: white;
-            padding: 2rem;
-            border-radius: var(--radius);
-            box-shadow: var(--shadow-sm);
-            max-width: 800px;
-            margin: 0 auto;
-        }
-        
-        .form-group {
-            margin-bottom: 1rem;
-        }
-        
-        .form-group label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 500;
-        }
-        
-        .form-group input,
-        .form-group select,
-        .form-group textarea {
-            width: 100%;
-            padding: 0.6rem;
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius);
-            font-size: 0.95rem;
-        }
-        
-        .form-group textarea {
-            min-height: 100px;
-            resize: vertical;
-        }
-        
-        .button-group {
-            margin-top: 2rem;
-            display: flex;
-            gap: 1rem;
-            justify-content: flex-end;
-        }
-        
-        button[type="submit"] {
-            background: var(--primary-color);
-            color: white;
-            border: none;
-            padding: 0.8rem 1.5rem;
-            border-radius: var(--radius);
-            cursor: pointer;
-            font-size: 1rem;
-            font-weight: 500;
-            position: relative;
-            min-width: 140px;
-        }
-
-        button[type="submit"].loading {
-            color: transparent;
-            pointer-events: none;
-        }
-
-        button[type="submit"].loading::after {
-            content: "";
-            position: absolute;
-            width: 20px;
-            height: 20px;
-            top: 50%;
-            left: 50%;
-            margin: -10px 0 0 -10px;
-            border: 3px solid rgba(255,255,255,0.3);
-            border-radius: 50%;
-            border-top-color: white;
-            animation: spin 1s ease-in-out infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        button[type="reset"] {
-            background: var(--hover-color);
-            border: 1px solid var(--border-color);
-            padding: 0.8rem 1.5rem;
-            border-radius: var(--radius);
-            cursor: pointer;
-            font-size: 1rem;
-        }
-        
-        .success-message {
-            background-color: #dcfce7;
-            color: #166534;
-            padding: 1rem;
-            border-radius: var(--radius);
-            margin-top: 1rem;
-            border-left: 4px solid #22c55e;
-            display: none;
-            animation: fadeIn 0.3s ease-in;
-        }
-
-        .error-message {
-            background-color: #fee2e2;
-            color: #991b1b;
-            padding: 1rem;
-            border-radius: var(--radius);
-            margin-top: 1rem;
-            border-left: 4px solid #ef4444;
-            display: none;
-            animation: fadeIn 0.3s ease-in;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .helper-text {
-            display: block;
-            color: #6b7280;
-            font-size: 0.875rem;
-            margin: -0.25rem 0 0.5rem 0;
-        }
-    </style>
 </head>
 <body>
     <header>
         <h1>🛡️ Best Practices Dashboard</h1>
+        <button class="theme-switch" aria-label="Toggle dark mode">
+            <svg width="24" height="24" viewBox="0 0 24 24">
+                <path class="sun" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                <path class="moon" fill="currentColor" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+            </svg>
+        </button>
     </header>
 
     <main>
@@ -163,17 +48,17 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="category">Category</label>
+                    <label for="category">Category *</label>
                     <small class="helper-text">Specific subcategory within the domain</small>
-                    <select id="category" name="category">
+                    <select id="category" name="category" required>
                         <option value="">Select Category</option>
                     </select>
                 </div>
 
                 <div class="form-group">
-                    <label for="feature">Feature</label>
+                    <label for="feature">Feature *</label>
                     <small class="helper-text">Specific Cloudflare feature this practice relates to</small>
-                    <select id="feature" name="feature">
+                    <select id="feature" name="feature" required>
                         <option value="">Select Feature</option>
                     </select>
                 </div>
@@ -202,9 +87,9 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="difficultyLevel">Difficulty Level</label>
+                    <label for="difficultyLevel">Difficulty Level *</label>
                     <small class="helper-text">Easy: ~3 actions, Medium: 4-7 actions, Complex: 8+ actions or advanced knowledge needed</small>
-                    <select id="difficultyLevel" name="difficultyLevel">
+                    <select id="difficultyLevel" name="difficultyLevel" required>
                         <option value="">Select Difficulty</option>
                         <option value="Easy">Easy</option>
                         <option value="Medium">Medium</option>
@@ -225,9 +110,9 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="sourceReference">Source Reference</label>
+                    <label for="sourceReference">Source Reference *</label>
                     <small class="helper-text">Link to official documentation or source material</small>
-                    <input type="text" id="sourceReference" name="sourceReference">
+                    <input type="text" id="sourceReference" name="sourceReference" required>
                 </div>
 
                 <div class="form-group">
@@ -255,5 +140,6 @@
     </footer>
 
     <script src="/dashboard.js" type="module"></script>
+    <script src="/theme.js" type="module"></script>
 </body>
 </html>
