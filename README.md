@@ -18,7 +18,7 @@ A web application built with Cloudflare Workers and Cloudflare D1 that provides 
 - **Frontend**: Vanilla JavaScript, HTML, and CSS
 - **Backend**: [Cloudflare Workers](https://workers.cloudflare.com/)
 - **Database**: [Cloudflare D1](https://developers.cloudflare.com/d1/) (SQLite)
-- **Authentication**: Cloudflare Access
+- **Authentication**: [Cloudflare Access](https://developers.cloudflare.com/cloudflare-one/policies/access/)
 - **Initial Data**: Comprehensive SQL file with best practices for various Cloudflare features and configurations [`initial_data.sql`](initial_data.sql)
 
 ## Getting Started
