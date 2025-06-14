@@ -52,7 +52,7 @@ body {
 header {
 	display: flex;
 	align-items: center;
-	padding: 1.5rem 2rem;
+	padding: 1.0rem 2rem;
 	background: var(--secondary-color);
 	box-shadow: var(--shadow-sm);
 	border-bottom: 1px solid var(--border-color);
@@ -151,6 +151,8 @@ main {
 	border-radius: var(--radius);
 	box-shadow: var(--shadow-sm);
 	margin-bottom: 1.5rem;
+	max-height: 70vh; /* Set a maximum height for the table container */
+	position: relative; /* For proper positioning of the fixed header */
 }
 
 table {
@@ -165,6 +167,19 @@ thead {
 	position: sticky;
 	top: 0;
 	z-index: 10;
+}
+
+/* Ensure header cells have a solid background to hide scrolling content */
+thead th {
+	background: var(--hover-color);
+	position: sticky;
+	top: 0;
+	z-index: 10;
+}
+
+/* Additional styles for the first sticky column when combined with sticky header */
+thead th:first-child {
+	z-index: 11; /* Higher than other header cells to stay on top at corners */
 }
 
 th,
@@ -341,18 +356,6 @@ footer {
 		padding: 1rem;
 	}
 
-	th,
-	td {
-		padding: 0.6rem 0.8rem;
-		font-size: 0.9rem;
-	}
-
-	/* Hide less important columns on medium screens */
-	th:nth-child(n + 7),
-	td:nth-child(n + 7) {
-		display: none;
-	}
-
 	.filters {
 		padding: 0.75rem;
 		gap: 0.5rem;
@@ -362,87 +365,59 @@ footer {
 		flex: 1 1 calc(100% - 0.5rem);
 	}
 
-	/* Convert table to cards for mobile */
-	table, thead, tbody, th, td, tr {
-		display: block;
+	/* Table styles for mobile */
+	.table-container {
+		overflow-x: auto;
 	}
 
-	thead tr {
-		position: absolute;
-		top: -9999px;
-		left: -9999px;
+	table {
+		width: 100%;
+		table-layout: fixed;
 	}
 
-	tr {
-		margin-bottom: 1rem;
-		border: 1px solid var(--border-color);
-		border-radius: var(--radius);
-		background: white !important;
-	}
-
-	td {
-		position: relative;
-		padding-left: 50% !important;
-		padding-top: 0.5rem;
-		padding-bottom: 0.5rem;
-		border: none;
-		border-bottom: 1px solid var(--border-color);
-		min-height: 2.5rem;
-		display: flex;
-		align-items: center;
-	}
-
-	td:last-child {
-		border-bottom: none;
-	}
-
-	td:before {
-		content: attr(data-label);
-		position: absolute;
-		left: 0.75rem;
-		width: 45%;
-		padding-right: 0.75rem;
-		font-weight: 600;
-		color: var(--text-color);
-	}
-}
-
-@media (max-width: 480px) {
-	/* Further reduce visible columns on very small screens */
-	th:nth-child(n + 5),
-	td:nth-child(n + 5) {
+	/* Hide all columns first */
+	table th, 
+	table td {
 		display: none;
 	}
 
-	th,
-	td {
-		font-size: 0.85rem;
-		padding: 0.5rem 0.7rem;
-	}
-
-	.filters input[type='search'],
-	.filters select {
-		flex-basis: 100%;
-	}
-
-	.filters input[type='search'],
-	.filters select,
-	#resetFilters {
+	/* Then show only the columns we want */
+	table th:nth-child(1), table td:nth-child(1), /* Title */
+	table th:nth-child(2), table td:nth-child(2), /* Category */
+	table th:nth-child(11), table td:nth-child(11) { /* Source */
+		display: table-cell;
+		padding: 0.6rem 0.8rem;
 		font-size: 0.9rem;
-		height: 40px;
 	}
 
-	td {
-		padding: 0.75rem !important;
-		padding-top: 2rem !important;
-		display: block;
+	/* Column widths for mobile */
+	th:nth-child(1), td:nth-child(1) { width: 45%; } /* Title */
+	th:nth-child(2), td:nth-child(2) { width: 30%; } /* Category */
+	th:nth-child(11), td:nth-child(11) { width: 25%; } /* Source */
+
+	/* Keep table structure */
+	thead { display: table-header-group; }
+	tbody { display: table-row-group; }
+	tr { display: table-row; }
+	td { border-bottom: 1px solid var(--border-color); }
+}
+
+@media (max-width: 480px) {
+	.table-container {
+		margin: 0 -1rem;
 	}
 
-	td:before {
-		top: 0.4rem;
-		left: 0.75rem;
-		width: 100%;
+	table th:nth-child(1), table td:nth-child(1), /* Title */
+	table th:nth-child(2), table td:nth-child(2), /* Category */
+	table th:nth-child(11), table td:nth-child(11) { /* Source */
+		padding: 0.5rem;
+		font-size: 0.85rem;
 	}
+
+	/* Adjust column widths for smaller screens */
+	th:nth-child(1), td:nth-child(1) { width: 50%; } /* Title */
+	th:nth-child(2), td:nth-child(2) { width: 30%; } /* Category */
+	th:nth-child(11), td:nth-child(11) { width: 20%; } /* Source */
 }
 
 /* Loading state and animations */

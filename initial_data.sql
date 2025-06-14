@@ -26,7 +26,9 @@ INSERT INTO Categories (category_id, name, description, display_order) VALUES
 (12, 'Automation & Management', 'Using APIs, Terraform, or SDKs for configuration management.', 12),
 (13, 'Client-Side Security', 'Protecting against threats originating from scripts running in the user browser.', 13),
 (14, 'Fraud Detection', 'Features to detect fraudulent activities like fake accounts or credential stuffing.', 14),
-(15, 'Non-HTTP/S Use Cases', 'Using Cloudflare for protocols other than HTTP/S.', 15);
+(15, 'Non-HTTP/S Use Cases', 'Using Cloudflare for protocols other than HTTP/S.', 15),
+(16, 'DDoS Protection', 'Cloudflare-provided automatic, unlimited and unmetered DDoS protection.', 16),
+(17, 'Cloudflare for SaaS', 'Cloudflare for SaaS allows you to extend the security and performance benefits of Cloudflare network to your customers via their own custom or vanity domains.', 17);
 
 -- Insert Cloudflare Features
 INSERT INTO CloudflareFeatures (feature_id, name, feature_url, subscription_level) VALUES
@@ -44,10 +46,15 @@ INSERT INTO CloudflareFeatures (feature_id, name, feature_url, subscription_leve
 (12, 'Terraform Provider', 'https://developers.cloudflare.com/terraform/', 'Free'),
 (13, 'Cloudflare API', 'https://developers.cloudflare.com/api/', 'Free'),
 (14, 'Managed IP Lists', 'https://developers.cloudflare.com/waf/tools/lists/managed-lists/', 'Enterprise'),
-(15, 'Advanced Certificate Manager', 'https://developers.cloudflare.com/ssl/edge-certificates/advanced-certificate-manager/', 'Pro'),
+(15, 'Advanced Certificate Manager', 'https://developers.cloudflare.com/ssl/edge-certificates/advanced-certificate-manager/', 'Paid Add-On'),
 (16, 'Spectrum', 'https://developers.cloudflare.com/spectrum/', 'Enterprise'),
 (17, 'Magic Transit', 'https://developers.cloudflare.com/magic-transit/', 'Enterprise'),
-(18, 'Workers', 'https://developers.cloudflare.com/workers/', 'Free');
+(18, 'Workers', 'https://developers.cloudflare.com/workers/', 'Free'),
+(19, 'Rules', 'https://developers.cloudflare.com/rules/', 'Free'),
+(20, 'Notifications', 'https://developers.cloudflare.com/notifications/', 'Free'),
+(21, 'DDoS Protection', 'https://developers.cloudflare.com/ddos-protection/', 'Free'),
+(22, 'Cloudflare for SaaS', 'https://developers.cloudflare.com/cloudflare-for-platforms/cloudflare-for-saas/', 'Free'),
+(23, 'Argo Smart Routing', 'https://developers.cloudflare.com/argo-smart-routing/', 'Paid Add-On');
 
 -- Insert Best Practices (Examples based on the PDF)
 

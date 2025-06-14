@@ -1,6 +1,6 @@
 {
 	"name": "cf-best-practices-repository",
-	"version": "0.0.0",
+	"version": "0.0.1",
 	"private": true,
 	"scripts": {
 		"deploy": "wrangler deploy",
@@ -10,6 +10,6 @@
 	},
 	"devDependencies": {
 		"vitest": "~3.0.7",
-		"wrangler": "^4.12.0"
+		"wrangler": "^4.20.0"
 	}
 }

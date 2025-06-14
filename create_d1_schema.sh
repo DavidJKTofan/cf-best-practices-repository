@@ -3,6 +3,23 @@
 # --- Configuration ---
 DATABASE_NAME="D1_DB_L7_BEST_PRACTICES"
 LOG_FILE="d1_schema_creation.log"
+ENVIRONMENT="remote" # Default to remote deployment
+
+# Parse command line arguments
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        --local) ENVIRONMENT="local" ;;
+        --remote) ENVIRONMENT="remote" ;;
+        --help) 
+            echo "Usage: $0 [--local|--remote]"
+            echo "  --local  Create and initialize local D1 database"
+            echo "  --remote Deploy and initialize D1 database to Cloudflare (default)"
+            exit 0
+            ;;
+        *) echo "Unknown parameter: $1"; exit 1 ;;
+    esac
+    shift
+done
 
 # --- Helper Functions ---
 log_message() {
@@ -15,7 +32,11 @@ log_message() {
 execute_sql() {
     local sql_command=$1
     log_message "INFO" "Executing: $sql_command"
-    output=$(npx wrangler d1 execute "$DATABASE_NAME" --command "$sql_command" --remote 2>&1)
+    if [ "$ENVIRONMENT" = "local" ]; then
+        output=$(npx wrangler d1 execute "$DATABASE_NAME" --command "$sql_command" --local 2>&1)
+    else
+        output=$(npx wrangler d1 execute "$DATABASE_NAME" --command "$sql_command" --remote 2>&1)
+    fi
     local status=$?
     if [ $status -ne 0 ]; then
         log_message "ERROR" "Failed executing command: $sql_command"
@@ -32,12 +53,20 @@ log_message "INFO" "Starting D1 schema creation for database: $DATABASE_NAME"
 # Delete existing database if it exists
 # log_message "INFO" "Attempting to delete existing database..."
 # npx wrangler d1 delete "$DATABASE_NAME" --force 2>/dev/null || true
-log_message "INFO" "Creating new D1 database..."
+log_message "INFO" "Creating new D1 database in $ENVIRONMENT environment..."
 
 # Create new D1 database
-npx wrangler d1 create "$DATABASE_NAME" --location weur
+if [ "$ENVIRONMENT" = "local" ]; then
+    # For local development, create the database in the .wrangler folder
+    mkdir -p .wrangler/state/d1
+    npx wrangler d1 create "$DATABASE_NAME" --local
+else
+    # For remote deployment, create the database in Cloudflare
+    npx wrangler d1 create "$DATABASE_NAME" --location weur
+fi
+
 if [ $? -ne 0 ]; then
-    log_message "ERROR" "Failed to create database"
+    log_message "ERROR" "Failed to create database in $ENVIRONMENT environment"
     exit 1
 fi
 
@@ -56,7 +85,7 @@ CREATE TABLE CloudflareFeatures (
     feature_id INTEGER PRIMARY KEY AUTOINCREMENT, 
     name TEXT NOT NULL UNIQUE, 
     feature_url TEXT,
-    subscription_level TEXT CHECK(subscription_level IN ('Free', 'Pro', 'Business', 'Enterprise'))
+    subscription_level TEXT CHECK(subscription_level IN ('Free', 'Pro', 'Business', 'Enterprise', 'Paid Add-On'))
 );" || exit 1
 
 # Create BestPractices Table
@@ -94,14 +123,18 @@ execute_sql "CREATE INDEX idx_bestpractices_impact ON BestPractices(impact_level
 # execute_sql "$UPDATE_TRIGGER_SQL" || exit 1
 
 log_message "INFO" "Uploading initial data..."
-output=$(npx wrangler d1 execute "$DATABASE_NAME" --file=./initial_data.sql --remote 2>&1)
+if [ "$ENVIRONMENT" = "local" ]; then
+    output=$(npx wrangler d1 execute "$DATABASE_NAME" --file=./initial_data.sql --local 2>&1)
+else
+    output=$(npx wrangler d1 execute "$DATABASE_NAME" --file=./initial_data.sql --remote 2>&1)
+fi
 status=$?
 if [ $status -ne 0 ]; then
-    log_message "ERROR" "Failed to upload initial data"
+    log_message "ERROR" "Failed to upload initial data in $ENVIRONMENT environment"
     log_message "ERROR" "Output: $output"
     exit 1
 fi
-log_message "INFO" "Initial data uploaded successfully"
+log_message "INFO" "Initial data uploaded successfully in $ENVIRONMENT environment"
 
 log_message "INFO" "--- D1 Schema Creation Script Finished Successfully ---"
 exit 0
