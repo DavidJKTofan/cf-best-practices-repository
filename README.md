@@ -37,7 +37,7 @@ chmod +x create_d1_schema.sh
 
 Alternatively, already deploy it remotely and then run `npx wrangler dev --remote` to use the remote D1 database.
 
-4. Configure Cloudflare Access to protect the `/dashboard` path
+4. Configure [Cloudflare Access](https://developers.cloudflare.com/cloudflare-one/policies/access/) to protect the `/dashboard` path
 
 
 ## Access Control
@@ -46,20 +46,14 @@ The dashboard for adding new entries is protected by Cloudflare Access:
 
 - Public users can view and search best practices
 - Authenticated users can access `/dashboard` to add new entries
-- Authentication is handled via Cloudflare Access policies
+- Authentication is handled via Cloudflare Access policies (relevant [tutorial](https://developers.cloudflare.com/cloudflare-one/tutorials/extend-sso-with-workers/))
 
 ## Data Structure
 
 The repository includes best practices for:
 
-- DNS and SSL/TLS configuration
-- WAF (Managed and Custom Rules)
-- Bot Management
-- Rate Limiting
-- API Security
-- Origin Protection
-- Performance Optimization
-- And more...
+- Categories: `/api/categories`
+- Features: `/api/features`
 
 ## Contributing
 

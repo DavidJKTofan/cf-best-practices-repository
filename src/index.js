@@ -7,7 +7,7 @@ const cache = {
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 async function getCategories(db) {
-	const now = Date.now();
+	const now = Date.now()
 	if (cache.categories.data && now - cache.categories.timestamp < CACHE_DURATION) {
 		return cache.categories.data;
 	}
@@ -62,6 +62,17 @@ function validateQueryParam(param, validValues) {
 	return param && validValues.includes(param);
 }
 
+// --- Cookie Parsing Helper ---
+function parseCookies(cookieHeader) {
+	const cookies = {};
+	if (!cookieHeader) return cookies;
+	for (const pair of cookieHeader.split(';')) {
+		const [key, ...rest] = pair.trim().split('=');
+		cookies[key] = rest.join('=');
+	}
+	return cookies;
+}
+
 // --- Worker Fetch Handler ---
 export default {
 	async fetch(request, env, ctx) {
@@ -82,11 +93,34 @@ export default {
 			});
 		}
 
-		 // Handle POST requests for /api/practices
+		// Handle POST requests for /api/practices
 		if (method === 'POST' && pathname === '/api/practices') {
+			const COOKIE_NAME = "CF_Authorization";
+			const CF_GET_IDENTITY = "https://do-droplet-dt.cloudflareaccess.com/cdn-cgi/access/get-identity"; // <-- Replace with your team name
+
+			const cookies = parseCookies(request.headers.get('Cookie') || '');
+			const cfAuth = cookies[COOKIE_NAME];
+
+			if (!cfAuth) {
+				return errorResponse('Missing or invalid authorization cookie', 401);
+			}
+
+			// Optional: Validate the cookie with Cloudflare Access identity endpoint
+			try {
+				const identityResp = await fetch(CF_GET_IDENTITY, request);
+				if (!identityResp.ok) {
+					return errorResponse('Invalid Cloudflare Access token', 401);
+				}
+				const identity = await identityResp.json();
+				// You can use identity info for further checks if needed
+			} catch (e) {
+				console.error('Cloudflare Access identity check failed:', e);
+				return errorResponse('Failed to validate identity', 401);
+			}
+
 			try {
 				const body = await request.json();
-				
+
 				// Validate required fields
 				const requiredFields = ['title', 'description', 'domain', 'recommendation_level', 'impact_level', 'category_id', 'feature_id', 'difficulty_level', 'source_reference'];
 				const missingFields = requiredFields.filter(field => !body[field]);
@@ -250,6 +284,8 @@ export default {
 			return errorResponse('API Endpoint Not Found', 404);
 		}
 
+		// For all other paths, return a simple 404
+		return new Response('Not Found', { status: 404 });
 		// IMPORTANT: For non-API paths (like '/', '/style.css', '/app.js'),
 		// DO NOT return a response here. By returning nothing (undefined),
 		// you allow Cloudflare to check the [site] configuration in wrangler.toml
