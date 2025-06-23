@@ -96,27 +96,13 @@ export default {
 		// Handle POST requests for /api/practices
 		if (method === 'POST' && pathname === '/api/practices') {
 			const COOKIE_NAME = "CF_Authorization";
-			const CF_GET_IDENTITY = "https://do-droplet-dt.cloudflareaccess.com/cdn-cgi/access/get-identity"; // <-- Replace with your team name
-
 			const cookies = parseCookies(request.headers.get('Cookie') || '');
+			//console.log('Validate Cookies:', cookies)
 			const cfAuth = cookies[COOKIE_NAME];
-
 			if (!cfAuth) {
 				return errorResponse('Missing or invalid authorization cookie', 401);
 			}
-
-			// Optional: Validate the cookie with Cloudflare Access identity endpoint
-			try {
-				const identityResp = await fetch(CF_GET_IDENTITY, request);
-				if (!identityResp.ok) {
-					return errorResponse('Invalid Cloudflare Access token', 401);
-				}
-				const identity = await identityResp.json();
-				// You can use identity info for further checks if needed
-			} catch (e) {
-				console.error('Cloudflare Access identity check failed:', e);
-				return errorResponse('Failed to validate identity', 401);
-			}
+			// Optimally, we want to properly check here for the CF_Identity cookie and validate the requests.
 
 			try {
 				const body = await request.json();
