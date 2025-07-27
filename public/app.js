@@ -19,7 +19,15 @@ function displayError(message) {
 	console.error('Error:', message);
 	errorMessage.textContent = `Error: ${message}. Please try refreshing.`;
 	errorMessage.style.display = 'block';
-	if (tableBody) tableBody.innerHTML = '<tr><td colspan="9">Failed to load data.</td></tr>'; // Update colspan
+	if (tableBody) {
+		tableBody.textContent = ''; // Clear existing content
+		const tr = document.createElement('tr');
+		const td = document.createElement('td');
+		td.setAttribute('colspan', '12'); // Updated colspan to match total columns
+		td.textContent = 'Failed to load data.';
+		tr.appendChild(td);
+		tableBody.appendChild(tr);
+	}
 }
 
 function clearError() {
@@ -53,39 +61,71 @@ function renderTable(practices) {
 	if (!tableBody) return;
 	clearError();
 
+	// Clear existing content
+	tableBody.textContent = '';
+
 	if (!practices || practices.length === 0) {
-		tableBody.innerHTML = '<tr><td colspan="9">No practices found matching your criteria.</td></tr>'; // Update colspan
+		const tr = document.createElement('tr');
+		const td = document.createElement('td');
+		td.setAttribute('colspan', '12'); // Updated colspan to match total columns
+		td.textContent = 'No practices found matching your criteria.';
+		tr.appendChild(td);
+		tableBody.appendChild(tr);
 		return;
 	}
 
-	tableBody.innerHTML = practices
-		.map((p) => {
-			const isSourceUrl = p.source_reference &&
-				p.source_reference.startsWith('https://');
+	practices.forEach((p) => {
+		const tr = document.createElement('tr');
+		
+		const createCell = (label, content, isCode = false) => {
+			const td = document.createElement('td');
+			td.setAttribute('data-label', label);
+			if (isCode) {
+				const code = document.createElement('code');
+				code.textContent = content || 'N/A';
+				td.appendChild(code);
+			} else {
+				td.textContent = content || 'N/A';
+			}
+			return td;
+		};
 
-			return `
-                <tr>
-                    <td data-label="Title">${escapeHTML(p.title)}</td>
-                    <td data-label="Category">${escapeHTML(p.category_name || 'N/A')}</td>
-                    <td data-label="Domain">${escapeHTML(p.domain)}</td>
-                    <td data-label="Level">${escapeHTML(p.recommendation_level)}</td>
-                    <td data-label="Impact">${escapeHTML(p.impact_level || 'N/A')}</td>
-                    <td data-label="Difficulty">${escapeHTML(p.difficulty_level || 'N/A')}</td>
-                    <td data-label="Description">${escapeHTML(p.description)}</td>
-                    <td data-label="Prerequisites">${escapeHTML(p.prerequisites || 'N/A')}</td>
-                    <td data-label="Feature">${p.feature_url
-											? `<a href="${escapeHTML(p.feature_url)}" target="_blank" rel="external noopener noreferrer">${escapeHTML(
-														p.feature_name || 'Link'
-												  )}</a>`
-											: escapeHTML(p.feature_name || 'N/A')}</td>
-                    <td data-label="Configuration"><code>${escapeHTML(p.expressions_configuration_details || 'N/A')}</code></td>
-                    <td data-label="Source">${isSourceUrl
-											? `<a href="${escapeHTML(p.source_reference)}" target="_blank" rel="external noopener noreferrer">Documentation</a>`
-											: escapeHTML(p.source_reference || 'N/A')}</td>
-                    <td data-label="Notes">${escapeHTML(p.notes || '')}</td>
-                </tr>`;
-		})
-		.join('');
+		const createLinkCell = (label, text, url) => {
+			const td = document.createElement('td');
+			td.setAttribute('data-label', label);
+			if (url) {
+				const a = document.createElement('a');
+				a.href = url;
+				a.textContent = text || 'Link';
+				a.target = '_blank';
+				a.rel = 'external noopener noreferrer';
+				td.appendChild(a);
+			} else {
+				td.textContent = text || 'N/A';
+			}
+			return td;
+		};
+
+		// Add cells to the row
+		tr.appendChild(createCell('Title', p.title));
+		tr.appendChild(createCell('Category', p.category_name));
+		tr.appendChild(createCell('Domain', p.domain));
+		tr.appendChild(createCell('Level', p.recommendation_level));
+		tr.appendChild(createCell('Impact', p.impact_level));
+		tr.appendChild(createCell('Difficulty', p.difficulty_level));
+		tr.appendChild(createCell('Description', p.description));
+		tr.appendChild(createCell('Prerequisites', p.prerequisites));
+		tr.appendChild(createLinkCell('Feature', p.feature_name, p.feature_url));
+		tr.appendChild(createCell('Configuration', p.expressions_configuration_details, true));
+		tr.appendChild(createLinkCell(
+			'Source',
+			p.source_reference?.startsWith('https://') ? 'Documentation' : p.source_reference,
+			p.source_reference?.startsWith('https://') ? p.source_reference : null
+		));
+		tr.appendChild(createCell('Notes', p.notes || ''));
+
+		tableBody.appendChild(tr);
+	});
 }
 
 /** Populates a select dropdown */
@@ -103,7 +143,13 @@ function populateSelect(selectElement, items, defaultOptionText) {
 
 async function loadPractices() {
 	if (!tableBody) return;
-	tableBody.innerHTML = '<tr><td colspan="9">Loading...</td></tr>'; // Update colspan
+	tableBody.textContent = ''; // Clear existing content
+	const tr = document.createElement('tr');
+	const td = document.createElement('td');
+	td.setAttribute('colspan', '12'); // Updated colspan to match total columns
+	td.textContent = 'Loading...';
+	tr.appendChild(td);
+	tableBody.appendChild(tr);
 
 	const params = new URLSearchParams();
 	const searchTerm = searchInput.value.trim();
@@ -124,11 +170,6 @@ async function loadPractices() {
 	if (practices !== null) {
 		renderTable(practices);
 	}
-}
-
-function escapeHTML(str) {
-	if (str === null || str === undefined) return '';
-	return str.toString().replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
 }
 
 function resetAllFilters() {
