@@ -5,11 +5,9 @@
 	"scripts": {
 		"deploy": "wrangler deploy",
 		"dev": "wrangler dev",
-		"start": "wrangler dev",
-		"test": "vitest"
+		"start": "wrangler dev"
 	},
 	"devDependencies": {
-		"vitest": "~3.0.7",
-		"wrangler": "^4.24.3"
+		"wrangler": "^4.46.0"
 	}
 }
