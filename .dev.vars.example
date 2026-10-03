@@ -1,0 +1,4 @@
+# Local-only overrides for `wrangler dev` (copy to .dev.vars, which is gitignored).
+# Allows the dashboard to save practices on localhost, where Cloudflare Access is not in front of the Worker.
+# Has no effect in production: the bypass also requires a localhost hostname.
+ALLOW_LOCAL_WRITES=true

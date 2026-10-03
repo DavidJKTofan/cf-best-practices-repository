@@ -6,27 +6,58 @@
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "cf-best-practices-repository",
 	"main": "src/index.js",
-	"compatibility_date": "2025-10-10",
+	"compatibility_date": "2026-10-01",
 	"compatibility_flags": ["nodejs_compat"],
 	"assets": {
 		"binding": "ASSETS",
-		"directory": "./public"
+		"directory": "./public",
+		// Unknown paths get public/404.html with a 404 status (navigations are served without invoking the Worker)
+		"not_found_handling": "404-page",
+		// API routes skip the asset lookup and go straight to the Worker
+		"run_worker_first": ["/api/*", "/dashboard/api/*"],
+	},
+	// Workers Cache (https://developers.cloudflare.com/workers/cache/) only in front of the PublicReads entrypoint
+	// (cached D1 reads). The default entrypoint stays uncached: enabling cache for it would also bill static
+	// asset requests, which are otherwise free. See the gateway pattern in src/index.js.
+	"exports": {
+		"default": { "type": "worker", "cache": { "enabled": false } },
+		"PublicReads": { "type": "worker", "cache": { "enabled": true } },
 	},
 	"observability": {
-		"enabled": true
+		"enabled": true,
+		"logs": {
+			"invocation_logs": true,
+			"head_sampling_rate": 1,
+		},
+		"traces": {
+			"enabled": true,
+			"head_sampling_rate": 0.1,
+		},
+		// Error monitoring: groups uncaught exceptions, 5xx responses, and console.error() calls into issues
+		// (https://developers.cloudflare.com/workers/observability/issues/)
+		"issues": {
+			"enabled": true,
+		},
+	},
+	"vars": {
+		// Cloudflare Access application protecting /dashboard (public values, not secrets).
+		// Writes are rejected unless the request carries a valid Access JWT for this application.
+		"ACCESS_TEAM_DOMAIN": "https://do-droplet-dt.cloudflareaccess.com",
+		"ACCESS_AUD": "68d3403eaf61ed41d3a8e0d46f04a9f1de96a9d278115ef934e4be9f0e990f06",
 	},
 	"d1_databases": [
 		{
 			"binding": "DB",
 			"database_name": "D1_DB_L7_BEST_PRACTICES",
-			"database_id": "fff37b78-990d-423c-a110-5cf786549f6f"
-		}
+			"database_id": "fff37b78-990d-423c-a110-5cf786549f6f",
+			"migrations_dir": "migrations",
+		},
 	],
 	"routes": [
 		{
 			"pattern": "db.automatic-demo.com",
-			"custom_domain": true
-		}
+			"custom_domain": true,
+		},
 	],
 	"workers_dev": false,
 	"preview_urls": false,
@@ -36,8 +67,8 @@
 			"namespace_id": "1001",
 			"simple": {
 				"limit": 1500,
-				"period": 60
-			}
-		}
-	]
+				"period": 60,
+			},
+		},
+	],
 }

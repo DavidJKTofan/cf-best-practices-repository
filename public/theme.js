@@ -1,30 +1,33 @@
-// Add theme switcher logic at the top of the file
-const themeSwitch = document.querySelector('.theme-switch');
-const prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
+// public/theme.js — light/dark toggle. The initial theme is applied by an inline <head> script to avoid a flash.
+const root = document.documentElement;
+const button = document.querySelector('.theme-switch');
+const systemDark = matchMedia('(prefers-color-scheme: dark)');
 
-// Load saved theme or use system preference
-const savedTheme = localStorage.getItem('theme');
-if (savedTheme) {
-	document.documentElement.dataset.theme = savedTheme;
-} else if (prefersDarkScheme.matches) {
-	document.documentElement.dataset.theme = 'dark';
+function savedTheme() {
+	try {
+		return localStorage.getItem('theme');
+	} catch {
+		return null;
+	}
 }
 
-// Update icon based on current theme
-function updateThemeIcon() {
-	const isDark = document.documentElement.dataset.theme === 'dark';
-	themeSwitch.querySelector('.sun').style.display = isDark ? 'none' : 'block';
-	themeSwitch.querySelector('.moon').style.display = isDark ? 'block' : 'none';
+function apply(theme) {
+	root.dataset.theme = theme;
+	button?.setAttribute('aria-label', theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme');
+	button?.setAttribute('title', theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme');
 }
 
-// Toggle theme
-themeSwitch.addEventListener('click', () => {
-	const currentTheme = document.documentElement.dataset.theme;
-	const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-	document.documentElement.dataset.theme = newTheme;
-	localStorage.setItem('theme', newTheme);
-	updateThemeIcon();
+apply(root.dataset.theme === 'dark' ? 'dark' : 'light');
+
+button?.addEventListener('click', () => {
+	const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
+	apply(next);
+	try {
+		localStorage.setItem('theme', next);
+	} catch {}
 });
 
-// Initialize icon state
-updateThemeIcon();
+// Follow OS changes until the user picks a theme explicitly
+systemDark.addEventListener('change', (event) => {
+	if (!savedTheme()) apply(event.matches ? 'dark' : 'light');
+});

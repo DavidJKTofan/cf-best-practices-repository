@@ -1,145 +1,201 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
-    <title>Best Practices Dashboard</title>
-    <link rel="stylesheet" href="/style.css" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-    <link rel="icon" type="image/png" href="/favicon.png">
-    <link rel="shortcut icon" href="/favicon.ico">
-</head>
-<body>
-    <header>
-        <h1>🛡️ Best Practices Dashboard</h1>
-        <button class="theme-switch" aria-label="Toggle dark mode">
-            <svg width="24" height="24" viewBox="0 0 24 24">
-                <path class="sun" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                <path class="moon" fill="currentColor" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-            </svg>
-        </button>
-    </header>
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>Add a Practice · Cloudflare L7 Best Practices</title>
+		<meta name="robots" content="noindex, nofollow" />
+		<meta name="color-scheme" content="light dark" />
+		<script>
+			(function () {
+				var t;
+				try {
+					t = localStorage.getItem('theme');
+				} catch (e) {}
+				if (t !== 'light' && t !== 'dark') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+				document.documentElement.dataset.theme = t;
+			})();
+		</script>
+		<link rel="stylesheet" href="/style.css" />
+		<link rel="icon" type="image/png" href="/favicon.png" />
+		<script src="/theme.js" type="module"></script>
+		<script src="/dashboard.js" type="module"></script>
+	</head>
+	<body>
+		<a href="#practice-form" class="skip-link">Skip to form</a>
 
-    <main>
-        <div class="dashboard-form">
-            <form id="practiceForm">
-                <div class="form-group">
-                    <label for="title">Title *</label>
-                    <small class="helper-text">A clear, concise name for the best practice</small>
-                    <input type="text" id="title" name="title" required>
-                </div>
+		<header class="site-header">
+			<div class="container header-inner">
+				<a class="brand" href="/">
+					<img src="/favicon.png" width="28" height="28" alt="" />
+					<span class="visually-hidden">Back to </span>
+					<h1>Cloudflare L7 Best Practices</h1>
+				</a>
+				<div class="header-actions">
+					<button class="icon-btn theme-switch" type="button" aria-label="Toggle color theme" title="Toggle color theme">
+						<svg class="icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+							<path d="M20.35 15.35A9 9 0 0 1 8.65 3.65 9 9 0 1 0 20.35 15.35Z" />
+						</svg>
+						<svg
+							class="icon-sun"
+							width="20"
+							height="20"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							aria-hidden="true"
+						>
+							<circle cx="12" cy="12" r="4" />
+							<path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32 1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+						</svg>
+					</button>
+				</div>
+			</div>
+		</header>
 
-                <div class="form-group">
-                    <label for="description">Description *</label>
-                    <small class="helper-text">Brief explanation of what this practice achieves and why it matters</small>
-                    <textarea id="description" name="description" required></textarea>
-                </div>
+		<main class="container page">
+			<h2 class="page-title">Add a best practice</h2>
+			<p class="page-intro">
+				New entries are published to the <a href="/">public repository</a> immediately. Fields marked * are required.
+			</p>
 
-                <div class="form-group">
-                    <label for="domain">Domain *</label>
-                    <small class="helper-text">Main area this practice affects</small>
-                    <select id="domain" name="domain" required>
-                        <option value="">Select Domain</option>
-                        <option value="Security">Security</option>
-                        <option value="Performance">Performance</option>
-                        <option value="Reliability">Reliability</option>
-                        <option value="General">General</option>
-                    </select>
-                </div>
+			<div id="status" role="status" aria-live="polite"></div>
 
-                <div class="form-group">
-                    <label for="category">Category *</label>
-                    <small class="helper-text">Specific subcategory within the domain</small>
-                    <select id="category" name="category" required>
-                        <option value="">Select Category</option>
-                    </select>
-                </div>
+			<form id="practice-form" class="card">
+				<div class="form-grid">
+					<div class="field field-wide">
+						<label for="title">Title <span class="required" aria-hidden="true">*</span></label>
+						<input type="text" id="title" name="title" required maxlength="500" aria-describedby="title-hint" />
+						<small id="title-hint" class="hint">A clear, concise name for the best practice.</small>
+					</div>
 
-                <div class="form-group">
-                    <label for="feature">Feature *</label>
-                    <small class="helper-text">Specific Cloudflare feature this practice relates to</small>
-                    <select id="feature" name="feature" required>
-                        <option value="">Select Feature</option>
-                    </select>
-                </div>
+					<div class="field field-wide">
+						<label for="description">Description <span class="required" aria-hidden="true">*</span></label>
+						<textarea id="description" name="description" required maxlength="5000" rows="3" aria-describedby="description-hint"></textarea>
+						<small id="description-hint" class="hint">What this practice achieves and why it matters.</small>
+					</div>
 
-                <div class="form-group">
-                    <label for="recommendationLevel">Recommendation Level *</label>
-                    <small class="helper-text">How strongly this practice is recommended for implementation</small>
-                    <select id="recommendationLevel" name="recommendationLevel" required>
-                        <option value="">Select Level</option>
-                        <option value="Mandatory">Mandatory</option>
-                        <option value="Recommended">Recommended</option>
-                        <option value="Optional">Optional</option>
-                        <option value="Situational">Situational</option>
-                    </select>
-                </div>
+					<div class="field">
+						<label for="domain">Domain <span class="required" aria-hidden="true">*</span></label>
+						<select id="domain" name="domain" required aria-describedby="domain-hint">
+							<option value="">Select domain</option>
+							<option>Security</option>
+							<option>Performance</option>
+							<option>Reliability</option>
+							<option>General</option>
+						</select>
+						<small id="domain-hint" class="hint">Main area this practice affects.</small>
+					</div>
 
-                <div class="form-group">
-                    <label for="impactLevel">Impact Level *</label>
-                    <small class="helper-text">Potential positive effect on security, performance, or reliability</small>
-                    <select id="impactLevel" name="impactLevel" required>
-                        <option value="">Select Impact</option>
-                        <option value="High">High</option>
-                        <option value="Medium">Medium</option>
-                        <option value="Low">Low</option>
-                    </select>
-                </div>
+					<div class="field">
+						<label for="category">Category <span class="required" aria-hidden="true">*</span></label>
+						<select id="category" name="category_id" required aria-describedby="category-hint">
+							<option value="">Loading…</option>
+						</select>
+						<small id="category-hint" class="hint">Specific subcategory within the domain.</small>
+					</div>
 
-                <div class="form-group">
-                    <label for="difficultyLevel">Difficulty Level *</label>
-                    <small class="helper-text">Easy: ~3 actions, Medium: 4-7 actions, Complex: 8+ actions or advanced knowledge needed</small>
-                    <select id="difficultyLevel" name="difficultyLevel" required>
-                        <option value="">Select Difficulty</option>
-                        <option value="Easy">Easy</option>
-                        <option value="Medium">Medium</option>
-                        <option value="Complex">Complex</option>
-                    </select>
-                </div>
+					<div class="field">
+						<label for="feature">Feature <span class="required" aria-hidden="true">*</span></label>
+						<select id="feature" name="feature_id" required aria-describedby="feature-hint">
+							<option value="">Loading…</option>
+						</select>
+						<small id="feature-hint" class="hint">Cloudflare feature this practice relates to.</small>
+					</div>
 
-                <div class="form-group">
-                    <label for="prerequisites">Prerequisites</label>
-                    <small class="helper-text">Required settings or features that must be enabled first</small>
-                    <textarea id="prerequisites" name="prerequisites"></textarea>
-                </div>
+					<div class="field">
+						<label for="recommendation-level">Recommendation level <span class="required" aria-hidden="true">*</span></label>
+						<select id="recommendation-level" name="recommendation_level" required aria-describedby="level-hint">
+							<option value="">Select level</option>
+							<option>Mandatory</option>
+							<option>Recommended</option>
+							<option>Optional</option>
+							<option>Situational</option>
+						</select>
+						<small id="level-hint" class="hint">How strongly this practice is recommended.</small>
+					</div>
 
-                <div class="form-group">
-                    <label for="configuration">Configuration Details</label>
-                    <small class="helper-text">Step-by-step implementation instructions or Rules expressions (Wireshark display filters)</small>
-                    <textarea id="configuration" name="configuration"></textarea>
-                </div>
+					<div class="field">
+						<label for="impact-level">Impact <span class="required" aria-hidden="true">*</span></label>
+						<select id="impact-level" name="impact_level" required aria-describedby="impact-hint">
+							<option value="">Select impact</option>
+							<option>High</option>
+							<option>Medium</option>
+							<option>Low</option>
+						</select>
+						<small id="impact-hint" class="hint">Positive effect on security, performance, or reliability.</small>
+					</div>
 
-                <div class="form-group">
-                    <label for="sourceReference">Source Reference *</label>
-                    <small class="helper-text">Link to official documentation or source material</small>
-                    <input type="text" id="sourceReference" name="sourceReference" required>
-                </div>
+					<div class="field">
+						<label for="difficulty-level">Difficulty <span class="required" aria-hidden="true">*</span></label>
+						<select id="difficulty-level" name="difficulty_level" required aria-describedby="difficulty-hint">
+							<option value="">Select difficulty</option>
+							<option>Easy</option>
+							<option>Medium</option>
+							<option>Complex</option>
+						</select>
+						<small id="difficulty-hint" class="hint">Easy: ~3 actions · Medium: 4–7 · Complex: 8+ or advanced knowledge.</small>
+					</div>
 
-                <div class="form-group">
-                    <label for="notes">Notes</label>
-                    <small class="helper-text">Additional context, warnings, or important considerations</small>
-                    <textarea id="notes" name="notes"></textarea>
-                </div>
+					<div class="field field-wide">
+						<label for="prerequisites">Prerequisites</label>
+						<textarea id="prerequisites" name="prerequisites" maxlength="5000" rows="2" aria-describedby="prerequisites-hint"></textarea>
+						<small id="prerequisites-hint" class="hint">Settings or features that must be enabled first.</small>
+					</div>
 
-                <div class="button-group">
-                    <button type="reset">Reset</button>
-                    <button type="submit">Save Practice</button>
-                </div>
-            </form>
-            <div id="successMessage" class="success-message">
-                Practice saved successfully!
-            </div>
-            <div id="errorMessage" class="error-message" style="display: none"></div>
-        </div>
-    </main>
+					<div class="field field-wide">
+						<label for="configuration">Configuration / expression</label>
+						<textarea
+							id="configuration"
+							name="expressions_configuration_details"
+							class="code"
+							maxlength="5000"
+							rows="4"
+							spellcheck="false"
+							aria-describedby="configuration-hint"
+						></textarea>
+						<small id="configuration-hint" class="hint">Step-by-step instructions or a Rules language expression.</small>
+					</div>
 
-    <footer>
-        <p>Data served via Cloudflare Workers & D1</p>
-        <p><a href="https://github.com/DavidJKTofan/cf-best-practices-repository" target="_blank" rel="noopener noreferrer">GitHub Repository</a></p>
-        <p><small>This is a personal project for educational purposes only.</small></p>
-    </footer>
+					<div class="field field-wide">
+						<label for="source-reference">Source reference <span class="required" aria-hidden="true">*</span></label>
+						<input
+							type="url"
+							id="source-reference"
+							name="source_reference"
+							required
+							maxlength="1000"
+							placeholder="https://developers.cloudflare.com/…"
+							aria-describedby="source-hint"
+						/>
+						<small id="source-hint" class="hint">Link to official documentation or source material.</small>
+					</div>
 
-    <script src="/dashboard.js" type="module"></script>
-    <script src="/theme.js" type="module"></script>
-</body>
+					<div class="field field-wide">
+						<label for="notes">Notes</label>
+						<textarea id="notes" name="notes" maxlength="5000" rows="2" aria-describedby="notes-hint"></textarea>
+						<small id="notes-hint" class="hint">Additional context, warnings, or considerations.</small>
+					</div>
+				</div>
+
+				<div class="form-actions">
+					<button type="reset" class="btn">Clear form</button>
+					<button type="submit" class="btn btn-primary">Save practice</button>
+				</div>
+			</form>
+		</main>
+
+		<footer class="site-footer">
+			<div class="container">
+				<p>
+					Data served by Cloudflare Workers &amp; D1 ·
+					<a href="https://github.com/DavidJKTofan/cf-best-practices-repository" target="_blank" rel="noopener noreferrer"
+						>GitHub repository</a
+					>
+				</p>
+			</div>
+		</footer>
+	</body>
 </html>

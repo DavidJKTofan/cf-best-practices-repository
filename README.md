@@ -1,64 +1,79 @@
 # Cloudflare L7 Best Practices Repository
 
-A web application built with Cloudflare Workers and Cloudflare D1 that provides a searchable repository of security, performance, and reliability best practices for Cloudflare configurations.
-
-> _**Focused on Layer 7 (L7) Application Services**_
+A searchable repository of security, performance, and reliability best practices for Cloudflare application (Layer 7) services, built on Cloudflare Workers and D1.
 
 ## Features
 
-- 🔍 Search and filter best practices by multiple criteria
-- 🏷️ Category and feature-based organization
-- 🎯 Detailed configuration examples and expressions
-- 📊 Impact and difficulty level indicators
-- 🔒 Focus on L7 (application layer) security
-- ⚡ Dashboard to add new entries (protected by Cloudflare Access)
+- Instant search with highlighting, filters, sortable columns, expandable details, and permalinks (`/#practice-<id>`)
+- Shareable views: search, filter, and sort state is kept in the URL
+- Responsive: sticky toolbar and table header on desktop, cards on phones, light/dark themes
+- Dashboard to add entries, protected by Cloudflare Access
 
-## Technology
+## Architecture
 
-- **Frontend**: Vanilla JavaScript, HTML, and CSS
-- **Backend**: [Cloudflare Workers](https://workers.cloudflare.com/)
-- **Database**: [Cloudflare D1](https://developers.cloudflare.com/d1/) (SQLite)
-- **Authentication**: [Cloudflare Access](https://developers.cloudflare.com/cloudflare-one/policies/access/)
-- **Initial Data**: Comprehensive SQL file with best practices for various Cloudflare features and configurations [`initial_data.sql`](initial_data.sql)
+| Layer         | Implementation                                                                                                                                                                                                                              |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Frontend      | Vanilla HTML/CSS/JS in [`public/`](public/), served by [Workers Static Assets](https://developers.cloudflare.com/workers/static-assets/) (free, does not invoke the Worker)                                                                 |
+| API           | Worker in [`src/index.js`](src/index.js), runs only for `/api/*` and `/dashboard/api/*`                                                                                                                                                     |
+| Read caching  | [Workers Cache](https://developers.cloudflare.com/workers/cache/) on the `PublicReads` entrypoint: cache hits skip Worker code and D1; writes purge by tag                                                                                  |
+| Database      | [D1](https://developers.cloudflare.com/d1/) with [migrations](migrations/) and the [Sessions API](https://developers.cloudflare.com/d1/best-practices/read-replication/)                                                                    |
+| Auth          | [Cloudflare Access](https://developers.cloudflare.com/cloudflare-one/policies/access/) on `/dashboard`; the Worker also validates the Access JWT on writes                                                                                  |
+| Observability | Workers Logs, Traces, and [Issues](https://developers.cloudflare.com/workers/observability/issues/) (error monitoring); [Local Explorer](https://developers.cloudflare.com/workers/local-development/local-explorer/) during `wrangler dev` |
+
+Workers Cache is enabled per entrypoint ([`wrangler.jsonc`](wrangler.jsonc)), not Worker-wide: enabling it on the default entrypoint would bill static asset requests, which are otherwise free ([pricing](https://developers.cloudflare.com/workers/cache/#pricing)).
 
 ## Getting Started
 
-1. Clone the repository
-2. Deploy to Cloudflare Workers using [Wrangler CLI](https://developers.cloudflare.com/workers/wrangler/install-and-update/)
-3. Initialize D1 database using the [`create_d1_schema.sh`](create_d1_schema.sh) script
-
 ```bash
-chmod +x create_d1_schema.sh
-# For remote deployment (default):
-./create_d1_schema.sh --remote
-# OR for local development:
-./create_d1_schema.sh --local
+npm install
+npx wrangler d1 create D1_DB_L7_BEST_PRACTICES --location weur   # once, if the database does not exist
+./create_d1_schema.sh --local --seed                              # local schema + seed data
+cp .dev.vars.example .dev.vars                                    # allow dashboard writes on localhost
+npm run dev
 ```
 
-Alternatively, already deploy it remotely and then run `npx wrangler dev --remote` to use the remote D1 database.
+Test and deploy:
 
-4. Configure [Cloudflare Access](https://developers.cloudflare.com/cloudflare-one/policies/access/) to protect the `/dashboard` path
+```bash
+npm test
+./create_d1_schema.sh --remote   # apply pending migrations (idempotent)
+npm run deploy
+```
 
+After changing bindings in `wrangler.jsonc`, run `npm run cf-typegen`.
 
-## Access Control
+## API
 
-The dashboard for adding new entries is protected by Cloudflare Access:
+| Endpoint                        | Description                                                                                     |
+| ------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `GET /api/practices`            | All practices. Optional filters: `search`, `categoryId`, `featureId`, `area`, `level`, `impact` |
+| `GET /api/categories`           | Categories                                                                                      |
+| `GET /api/features`             | Cloudflare features                                                                             |
+| `POST /dashboard/api/practices` | Create a practice (Access-protected, JSON body)                                                 |
 
-- Public users can view and search best practices
-- Authenticated users can access `/dashboard` to add new entries
-- Authentication is handled via Cloudflare Access policies (relevant [tutorial](https://developers.cloudflare.com/cloudflare-one/tutorials/extend-sso-with-workers/))
+## Search engines and AI crawlers
 
-## Data Structure
+This site opts out of indexing and AI use:
 
-The repository includes best practices for:
+- Every response sends `X-Robots-Tag: noindex, nofollow` (HTML pages also include a robots meta tag).
+- [`robots.txt`](public/robots.txt) sets [Content Signals](https://contentsignals.org/) `search=no, ai-input=no, ai-train=no`, blocks known AI crawlers, and disallows `/api/`, `/dashboard`, and [`/cdn-cgi/`](https://developers.cloudflare.com/fundamentals/reference/cdn-cgi-endpoint/).
+- `robots.txt` is voluntary. To enforce blocking, use [AI Crawl Control](https://developers.cloudflare.com/ai-crawl-control/) on the zone.
 
-- Categories: `/api/categories`
-- Features: `/api/features`
+## Production settings (dashboard)
+
+- Optional: enable [D1 read replication](https://developers.cloudflare.com/d1/best-practices/read-replication/) for faster cache misses.
+- HSTS and AI crawler blocking are zone settings, not part of this repository.
 
 ## Contributing
 
-Contributions are welcome! Please feel free to:
+Pull requests with new best practices or improvements are welcome. Content updates are re-runnable SQL files in [`data/`](data/). Allowed users can also add entries through the dashboard.
 
-1. Submit pull requests with additional best practices or general improvements to this project
-2. Use the authenticated dashboard to add new entries (for allowed users only)
-3. Suggest improvements to existing content
+## Disclaimer
+
+This is a personal project for educational and informational purposes only. It is not an official Cloudflare product, and its content does not represent official Cloudflare guidance or the views of the author's employer.
+
+The recorded best practices are provided "as is", without warranty of any kind. They may be incomplete, outdated, or unsuitable for your environment, plan, or compliance requirements. Always validate them against the [official Cloudflare documentation](https://developers.cloudflare.com/) and test changes (for example, with the _Log_ action) before applying them in production.
+
+The author and contributors are not responsible or liable for any damage, outage, security incident, data loss, or other consequence arising from the use of, or reliance on, any information in this repository or on the website. You use it at your own risk.
+
+Cloudflare and related marks are trademarks of Cloudflare, Inc.

@@ -1,0 +1,15 @@
+# Headers for static assets (https://developers.cloudflare.com/workers/static-assets/headers/).
+# Worker (API) responses set their own headers in src/index.js.
+#
+# The CSP deliberately has no script-src: Cloudflare injects an inline JavaScript Detections
+# script into HTML, which a strict script-src would block unless a per-request nonce is set
+# in the response header (impossible for static assets without running the Worker first).
+/*
+  X-Robots-Tag: noindex, nofollow
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()
+  Content-Security-Policy: frame-ancestors 'none'; base-uri 'self'; object-src 'none'; form-action 'self'
+
+/favicon.*
+  Cache-Control: public, max-age=604800

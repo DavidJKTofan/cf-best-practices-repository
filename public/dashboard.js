@@ -1,124 +1,86 @@
-// Dashboard.js
-const API_BASE = '/api';
+// public/dashboard.js — form for adding a practice (page and write API are protected by Cloudflare Access)
 
-// DOM Elements
-const form = document.getElementById('practiceForm');
-const categorySelect = document.getElementById('category');
-const featureSelect = document.getElementById('feature');
-const successMessage = document.getElementById('successMessage');
-const errorMessage = document.getElementById('errorMessage');
+const WRITE_URL = '/dashboard/api/practices';
 
-// Load categories and features on page load
-async function initializeDashboard() {
-    try {
-        const [categories, features] = await Promise.all([
-            fetch(`${API_BASE}/categories`).then(r => r.json()),
-            fetch(`${API_BASE}/features`).then(r => r.json())
-        ]);
+const form = document.getElementById('practice-form');
+const status = document.getElementById('status');
+const submitButton = form.querySelector('button[type="submit"]');
 
-        if (categories.success && categories.data) {
-            populateSelect(categorySelect, categories.data);
-        }
-        if (features.success && features.data) {
-            populateSelect(featureSelect, features.data);
-        }
-    } catch (error) {
-        showError('Failed to load initial data');
-        console.error('Initialization error:', error);
-    }
+function showStatus(type, ...content) {
+	const alert = document.createElement('div');
+	alert.className = `alert alert-${type}`;
+	if (type === 'error') alert.setAttribute('role', 'alert');
+	alert.append(...content);
+	status.replaceChildren(alert);
+	alert.scrollIntoView({ block: 'nearest' });
 }
 
-function populateSelect(selectElement, items) {
-    // Keep the first "Select..." option
-    const firstOption = selectElement.firstElementChild;
-    selectElement.innerHTML = '';
-    selectElement.appendChild(firstOption);
-    
-    items.forEach(item => {
-        const option = document.createElement('option');
-        option.value = item.id;
-        option.textContent = item.name;
-        selectElement.appendChild(option);
-    });
+async function loadOptions(url, select, placeholder) {
+	const response = await fetch(url);
+	const body = await response.json();
+	if (!response.ok || !body.success) throw new Error(body.error || `HTTP ${response.status}`);
+	select.replaceChildren(new Option(placeholder, ''), ...body.data.map((item) => new Option(item.name, item.id)));
 }
 
-function showSuccess(message = 'Practice saved successfully!') {
-    successMessage.textContent = message;
-    successMessage.style.display = 'block';
-    errorMessage.style.display = 'none';
-    
-    // Automatically hide after 5 seconds with fade out
-    setTimeout(() => {
-        successMessage.style.opacity = '0';
-        setTimeout(() => {
-            successMessage.style.display = 'none';
-            successMessage.style.opacity = '1';
-        }, 300);
-    }, 5000);
+async function initialize() {
+	try {
+		await Promise.all([
+			loadOptions('/api/categories', form.elements.category_id, 'Select category'),
+			loadOptions('/api/features', form.elements.feature_id, 'Select feature'),
+		]);
+	} catch (error) {
+		console.error('Failed to load categories/features', error);
+		showStatus('error', 'Could not load categories and features. Reload the page to try again.');
+	}
 }
 
-function showError(message) {
-    errorMessage.textContent = message;
-    errorMessage.style.display = 'block';
-    successMessage.style.display = 'none';
-}
+form.addEventListener('submit', async (event) => {
+	event.preventDefault();
+	if (submitButton.disabled) return;
 
-async function handleSubmit(event) {
-    event.preventDefault();
-    const submitButton = form.querySelector('button[type="submit"]');
-    submitButton.classList.add('loading');
-    
-    const formData = new FormData(form);
-    const practice = {
-        title: formData.get('title'),
-        description: formData.get('description'),
-        domain: formData.get('domain'),
-        category_id: formData.get('category'),
-        feature_id: formData.get('feature'),
-        recommendation_level: formData.get('recommendationLevel'),
-        impact_level: formData.get('impactLevel'),
-        difficulty_level: formData.get('difficultyLevel'),
-        prerequisites: formData.get('prerequisites') || null,
-        expressions_configuration_details: formData.get('configuration') || null,
-        source_reference: formData.get('sourceReference'),
-        notes: formData.get('notes') || null
-    };
+	submitButton.disabled = true;
+	submitButton.setAttribute('aria-busy', 'true');
+	status.replaceChildren();
 
-    try {
-        const response = await fetch(`${API_BASE}/practices`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(practice)
-        });
+	try {
+		const response = await fetch(WRITE_URL, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(Object.fromEntries(new FormData(form))),
+		});
 
-        const result = await response.json();
-        
-        if (!response.ok) {
-            throw new Error(result.error || 'Failed to save practice');
-        }
+		let result;
+		try {
+			result = await response.json();
+		} catch {
+			throw new Error(
+				`Unexpected response from the server (HTTP ${response.status}). Your Access session may have expired; reload the page.`,
+			);
+		}
+		if (!response.ok || !result.success) throw new Error(result.error || `HTTP ${response.status}`);
 
-        if (result.success) {
-            showSuccess();
-            form.reset();
-        } else {
-            throw new Error(result.error || 'Failed to save practice');
-        }
-    } catch (error) {
-        showError(error.message);
-        console.error('Submission error:', error);
-    } finally {
-        submitButton.classList.remove('loading');
-    }
-}
+		form.reset(); // before showStatus: the reset handler clears the status area
+		const link = document.createElement('a');
+		link.href = `/#practice-${result.id}`;
+		link.textContent = 'View it in the repository';
+		showStatus('success', 'Practice saved. ', link);
 
-// Event Listeners
-form.addEventListener('submit', handleSubmit);
-form.addEventListener('reset', () => {
-    errorMessage.style.display = 'none';
-    successMessage.style.display = 'none';
+		// Refresh the browser's cached copy so the repository page shows the new entry right away
+		fetch('/api/practices', { cache: 'reload' }).catch(() => {});
+	} catch (error) {
+		console.error('Failed to save practice', error);
+		// A TypeError here usually means Access redirected the request to its login page (session expired)
+		const message =
+			error instanceof TypeError
+				? 'Could not reach the server. If your Access session expired, reload the page to sign in again.'
+				: error.message;
+		showStatus('error', `Could not save the practice: ${message}`);
+	} finally {
+		submitButton.disabled = false;
+		submitButton.removeAttribute('aria-busy');
+	}
 });
 
-// Initialize the dashboard
-initializeDashboard();
+form.addEventListener('reset', () => status.replaceChildren());
+
+initialize();
