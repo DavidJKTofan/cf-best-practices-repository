@@ -26,8 +26,15 @@ const TEXT_LIMITS = {
 	notes: 5000,
 };
 
-// Transient D1 errors worth retrying (https://developers.cloudflare.com/d1/best-practices/retry-queries/)
-const RETRYABLE_D1_ERRORS = ['Network connection lost', 'storage caused object to be reset', 'reset because its code was updated'];
+// Transient D1 errors whose recommended action is "Retry the operation"
+// (https://developers.cloudflare.com/d1/observability/debug-d1/#error-list, /d1/best-practices/retry-queries/)
+const RETRYABLE_D1_ERRORS = [
+	'Network connection lost',
+	'storage caused object to be reset',
+	'reset because its code was updated',
+	'Replica disconnected from primary',
+	'Cannot resolve D1 DB due to transient issue on remote node',
+];
 
 const API_HEADERS = {
 	'X-Content-Type-Options': 'nosniff',
@@ -198,9 +205,10 @@ export class PublicReads extends WorkerEntrypoint {
 		const url = new URL(request.url);
 		const route = READ_ROUTES[url.pathname];
 		try {
-			// Sessions API lets reads be served by the nearest read replica once read replication is
-			// enabled on the database; without replication every query simply goes to the primary.
-			const data = await route.handler(this.env.DB.withSession('first-unconstrained'), url);
+			// Read from the primary: these responses fill the edge cache right after a write purges it, and a
+			// lagging read replica would cache stale data for the whole edge TTL. Workers Cache already serves
+			// reads close to users, so read replicas would only speed up cache misses.
+			const data = await route.handler(this.env.DB.withSession('first-primary'), url);
 			return json(
 				{ success: true, data, count: data.length },
 				{

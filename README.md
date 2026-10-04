@@ -16,7 +16,7 @@ A searchable repository of security, performance, and reliability best practices
 | Frontend      | Vanilla HTML/CSS/JS in [`public/`](public/), served by [Workers Static Assets](https://developers.cloudflare.com/workers/static-assets/) (free, does not invoke the Worker)                                                                 |
 | API           | Worker in [`src/index.js`](src/index.js), runs only for `/api/*` and `/dashboard/api/*`                                                                                                                                                     |
 | Read caching  | [Workers Cache](https://developers.cloudflare.com/workers/cache/) on the `PublicReads` entrypoint: cache hits skip Worker code and D1; writes purge by tag                                                                                  |
-| Database      | [D1](https://developers.cloudflare.com/d1/) with [migrations](migrations/) and the [Sessions API](https://developers.cloudflare.com/d1/best-practices/read-replication/)                                                                    |
+| Database      | [D1](https://developers.cloudflare.com/d1/) with [migrations](migrations/); [`initial_data.sql`](initial_data.sql) is a production snapshot (`npm run db:seed:refresh`)                                                                     |
 | Auth          | [Cloudflare Access](https://developers.cloudflare.com/cloudflare-one/policies/access/) on `/dashboard`; the Worker also validates the Access JWT on writes                                                                                  |
 | Observability | Workers Logs, Traces, and [Issues](https://developers.cloudflare.com/workers/observability/issues/) (error monitoring); [Local Explorer](https://developers.cloudflare.com/workers/local-development/local-explorer/) during `wrangler dev` |
 
@@ -27,7 +27,7 @@ Workers Cache is enabled per entrypoint ([`wrangler.jsonc`](wrangler.jsonc)), no
 ```bash
 npm install
 npx wrangler d1 create D1_DB_L7_BEST_PRACTICES --location weur   # once, if the database does not exist
-./create_d1_schema.sh --local --seed                              # local schema + seed data
+./create_d1_schema.sh --local --seed                              # local schema + production snapshot
 cp .dev.vars.example .dev.vars                                    # allow dashboard writes on localhost
 npm run dev
 ```
@@ -61,7 +61,7 @@ This site opts out of indexing and AI use:
 
 ## Production settings (dashboard)
 
-- Optional: enable [D1 read replication](https://developers.cloudflare.com/d1/best-practices/read-replication/) for faster cache misses.
+- [D1 read replication](https://developers.cloudflare.com/d1/best-practices/read-replication/) is not needed: Workers Cache serves reads close to users, and cache misses read from the primary so a refill after a write is never stale.
 - HSTS and AI crawler blocking are zone settings, not part of this repository.
 
 ## Contributing

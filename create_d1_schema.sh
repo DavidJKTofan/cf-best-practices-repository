@@ -8,14 +8,15 @@
 #   npx wrangler d1 create D1_DB_L7_BEST_PRACTICES --location weur
 #
 # Migrations are idempotent and tracked in the d1_migrations table, so re-running is safe.
-# Only use --seed on an empty database: initial_data.sql inserts fixed category/feature IDs.
+# Only use --seed on an empty database: initial_data.sql is a snapshot of production data with fixed IDs
+# (regenerate it with `npm run db:seed:refresh`).
 set -euo pipefail
 
 TARGET=""
 SEED=false
 
 usage() {
-	sed -n '2,11p' "$0" | sed 's/^# \{0,1\}//'
+	sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//'
 }
 
 while [[ $# -gt 0 ]]; do

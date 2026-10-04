@@ -14,6 +14,7 @@ Cloudflare Worker + D1 app. Static frontend in `public/` (no build step, no fram
 | Tests                    | `npm test` (Vitest + `@cloudflare/vitest-plugin`, runs in workerd)             |
 | Regenerate binding types | `npm run cf-typegen` (after any `wrangler.jsonc` binding change)               |
 | Apply migrations         | `npm run db:migrate:local` / `npm run db:migrate:remote`                       |
+| Refresh seed data        | `npm run db:seed:refresh` (exports production data into `initial_data.sql`)    |
 | Deploy check             | `npx wrangler deploy --dry-run`                                                |
 | Format                   | `npx prettier --write <files>` (`.prettierrc`: tabs, single quotes, width 140) |
 
@@ -21,6 +22,7 @@ Cloudflare Worker + D1 app. Static frontend in `public/` (no build step, no fram
 
 - **Keep static assets free.** The Worker runs only for `assets.run_worker_first` paths (`/api/*`, `/dashboard/api/*`). Do not set `run_worker_first: true` and do not enable Workers Cache on the `default` entrypoint ([pricing](https://developers.cloudflare.com/workers/cache/#pricing)).
 - **Reads go through `PublicReads`.** The uncached default entrypoint rate-limits, then forwards `GET /api/*` via `ctx.exports.PublicReads.fetch()`. New read routes go in `READ_ROUTES` with a `Cache-Tag`.
+- **Reads use `withSession('first-primary')`.** Cache fills right after a write-triggered purge must not come from a lagging read replica, or stale data is cached for the whole edge TTL.
 - **Writes must purge.** Purges are scoped per entrypoint, so writes call the `PublicReads.purgePractices()` RPC method after the D1 write. `wrangler dev` does not emulate Workers Cache (`ctx.cache` is undefined); verify `Cf-Cache-Status` after deploying.
 - **Writes live under `/dashboard/api/*` only.** That path is behind Cloudflare Access, and the Worker validates the `Cf-Access-Jwt-Assertion` JWT (`ACCESS_TEAM_DOMAIN`, `ACCESS_AUD`). Never add write routes under `/api/`.
 - **Schema changes = new migration file.** Never edit an applied migration. Run `PRAGMA optimize` after index changes (`create_d1_schema.sh` does).
