@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>Read API &amp; Agent Access | Cloudflare L7 Best Practices</title>
+		<meta
+			name="description"
+			content="Query Cloudflare L7 best practices through an anonymous JSON API, Markdown pages, and machine-readable discovery documents."
+		/>
+		<link rel="canonical" href="https://db.automatic-demo.com/api-docs" />
+		<link rel="alternate" type="text/markdown" href="/api-docs.md" />
+		<link rel="service-desc" type="application/vnd.oai.openapi+json" href="/openapi.json" />
+		<link rel="stylesheet" href="/style.css" />
+		<link rel="icon" href="/favicon.png" />
+		<meta name="color-scheme" content="light dark" />
+		<script src="/theme.js" type="module"></script>
+	</head>
+	<body>
+		<a class="skip-link" href="#docs">Skip to documentation</a>
+		<header class="site-header">
+			<div class="container header-inner">
+				<a class="brand" href="/">Cloudflare L7 Best Practices</a><a href="/api-docs.md">Markdown</a>
+			</div>
+		</header>
+		<main id="docs" class="container practice-page">
+			<article>
+				<header>
+					<p class="eyebrow">Reference / Public read API</p>
+					<h1>Read once. Retrieve anywhere.</h1>
+					<p class="practice-lede">
+						Anonymous access to the same sourced practices in HTML, JSON, and Markdown. No API key, account, or JavaScript required.
+					</p>
+				</header>
+				<section>
+					<h2>Content formats</h2>
+					<p>
+						Send <code>Accept: text/markdown</code> to <code>/</code> or <code>/practices/{id}</code>. Browsers receive HTML by default;
+						negotiated responses send <code>Vary: Accept</code>. Explicit Markdown URLs are <a href="/index.md">/index.md</a> and
+						<code>/practices/{id}.md</code>.
+					</p>
+					<p>
+						Start with <a href="/llms.txt">/llms.txt</a> for links, or <a href="/llms-full.txt">/llms-full.txt</a> for all practice details.
+						Cite canonical <code>/practices/{id}</code> URLs and their linked sources.
+					</p>
+				</section>
+				<section>
+					<h2>JSON endpoints</h2>
+					<ul>
+						<li>
+							<a href="/api/practices"><code>GET /api/practices</code></a> — all practices and configuration details.
+						</li>
+						<li>
+							<a href="/api/categories"><code>GET /api/categories</code></a> — category IDs and names.
+						</li>
+						<li>
+							<a href="/api/features"><code>GET /api/features</code></a> — feature IDs, names, and documentation URLs.
+						</li>
+					</ul>
+					<p>
+						Responses are <code>{"success": true, "data": [...], "count": 123}</code>. The count reflects the returned records. There is no
+						pagination.
+					</p>
+				</section>
+				<section>
+					<h2>Filters</h2>
+					<p>
+						<code>/api/practices</code> accepts <code>search</code> (literal substring, up to 200 characters), <code>categoryId</code>,
+						<code>featureId</code>, <code>area</code> (Security, Performance, Reliability, General), <code>level</code> (Mandatory,
+						Recommended, Optional, Situational), and <code>impact</code> (High, Medium, Low). Filters combine with AND. Unknown IDs return
+						no records; invalid filter values are ignored.
+					</p>
+					<pre tabindex="0"><code>curl 'https://db.automatic-demo.com/api/practices?search=WAF&amp;area=Security'
+curl -H 'Accept: text/markdown' https://db.automatic-demo.com/</code></pre>
+				</section>
+				<section>
+					<h2>Caching, errors, and authentication</h2>
+					<p>
+						GET, HEAD, and OPTIONS are supported for public reads. Cross-origin reads are allowed. Practice responses may be cached by
+						clients for 60 seconds; taxonomy responses for 300 seconds. The edge cache is invalidated after dashboard writes.
+					</p>
+					<p>
+						Errors use appropriate HTTP status codes. JSON API errors return <code>{"success": false, "error": "..."}</code>. A
+						<code>429</code> includes <code>Retry-After: 60</code>; respect it and reuse cached results. Missing practice pages return 404,
+						and unavailable content returns 503.
+					</p>
+					<p>
+						Public reads need no authentication. Writes exist only under the Access-protected dashboard; see
+						<a href="/auth.md">authentication guidance</a>.
+					</p>
+				</section>
+				<section>
+					<h2>Discovery and responsible use</h2>
+					<p>
+						Use the <a href="/openapi.json">OpenAPI schema</a>, <a href="/.well-known/api-catalog">API catalog</a>,
+						<a href="/.well-known/agent-skills/index.json">agent skills index</a>, and
+						<a href="/.well-known/ai-catalog.json">capability manifest</a>. Search indexing and AI answer retrieval are permitted; AI
+						training is not.
+					</p>
+					<p>
+						This is a personal educational repository, not official Cloudflare guidance. Check the recorded prerequisites, plan
+						entitlements, update dates, and official sources before applying a configuration.
+					</p>
+				</section>
+			</article>
+		</main>
+		<footer class="site-footer">
+			<div class="container"><a href="/">Browse all practices</a> · <a href="/llms.txt">Agent index</a></div>
+		</footer>
+	</body>
+</html>

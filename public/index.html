@@ -8,7 +8,24 @@
 			name="description"
 			content="A searchable collection of security, performance, and reliability best practices for Cloudflare application (Layer 7) services."
 		/>
-		<meta name="robots" content="noindex, nofollow" />
+		<link rel="canonical" href="https://db.automatic-demo.com/" />
+		<link rel="alternate" type="text/markdown" href="/index.md" title="All practices as Markdown" />
+		<link rel="sitemap" type="application/xml" href="/sitemap.xml" />
+		<link rel="api-catalog" href="/.well-known/api-catalog" />
+		<link rel="ai-catalog" href="/.well-known/ai-catalog.json" />
+		<link rel="describedby" type="text/plain" href="/llms.txt" />
+		<meta property="og:type" content="website" />
+		<meta property="og:title" content="Cloudflare L7 Best Practices" />
+		<meta
+			property="og:description"
+			content="Sourced security, performance, and reliability recommendations with prerequisites and configuration examples."
+		/>
+		<meta property="og:url" content="https://db.automatic-demo.com/" />
+		<meta property="og:site_name" content="Cloudflare L7 Best Practices" />
+		<meta name="twitter:card" content="summary" />
+		<script id="collection-schema" type="application/ld+json">
+			{}
+		</script>
 		<meta name="color-scheme" content="light dark" />
 		<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
 		<meta name="theme-color" content="#17181b" media="(prefers-color-scheme: dark)" />
@@ -30,6 +47,7 @@
 		<link rel="apple-touch-icon" href="/favicon.png" />
 		<script src="/theme.js" type="module"></script>
 		<script src="/app.js" type="module"></script>
+		<script src="/webmcp.js" type="module"></script>
 	</head>
 	<body>
 		<a href="#results" class="skip-link">Skip to results</a>
@@ -79,6 +97,15 @@
 		</header>
 
 		<main id="main">
+			<section class="container repository-intro" aria-label="About this repository">
+				<p>
+					Sourced recommendations for Cloudflare application security, performance, and reliability. Each practice includes plan
+					prerequisites, configuration guidance, and links to official documentation.
+				</p>
+				<nav aria-label="Repository formats">
+					<a href="/index.md">Markdown</a> · <a href="/api-docs">API documentation</a> · <a href="/llms.txt">Agent index</a>
+				</nav>
+			</section>
 			<section class="toolbar" aria-label="Search and filters">
 				<div class="container">
 					<div class="controls">
@@ -198,7 +225,11 @@
 							</tr>
 						</tbody>
 					</table>
-					<noscript><p class="state">This page needs JavaScript to load the best practices.</p></noscript>
+					<noscript
+						><p class="state">
+							Follow a practice title for its full details. JavaScript adds search, filters, and expandable rows.
+						</p></noscript
+					>
 				</div>
 			</div>
 

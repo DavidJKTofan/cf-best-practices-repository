@@ -1,11 +1,19 @@
 // src/index.js — Public read API and Access-protected write API for the best practices repository (D1).
-// Static assets in ./public are served directly; this Worker only runs for /api/* and /dashboard/api/*.
+// Static files are served directly; public documents and API paths use the Worker (see wrangler.jsonc).
 //
 // Caching (https://developers.cloudflare.com/workers/cache/examples/, gateway pattern): the default entrypoint is an
 // uncached gateway (keeps static assets free, runs rate limiting and auth on every request) that forwards reads
 // to the PublicReads entrypoint, which has Workers Cache enabled in wrangler.jsonc. Cache hits never query D1.
 import { WorkerEntrypoint } from 'cloudflare:workers';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
+import { PRACTICES_SQL } from './practice-data';
+import {
+	CONTENT_CACHE_TAG as PRACTICES_CACHE_TAG,
+	contentError,
+	isPublicContent,
+	normalizeContentRequest,
+	servePublicContent,
+} from './public-content';
 
 const MAX_BODY_BYTES = 64 * 1024;
 const MAX_SEARCH_LENGTH = 200;
@@ -40,18 +48,19 @@ const API_HEADERS = {
 	'X-Content-Type-Options': 'nosniff',
 	'Content-Security-Policy': "default-src 'none'; frame-ancestors 'none'",
 	'Referrer-Policy': 'strict-origin-when-cross-origin',
-	'X-Robots-Tag': 'noindex, nofollow',
+	'X-Robots-Tag': 'noindex',
+	'Content-Signal': 'search=yes, ai-input=yes, ai-train=no',
 };
 
 // Edge-only TTL for Workers Cache (stripped before responses reach clients). Writes purge the cache, and each
 // deployment starts with an empty cache, so this mainly bounds staleness after direct D1 edits.
 const EDGE_CACHE_CONTROL = 'public, max-age=3600, stale-while-revalidate=86400';
-const PRACTICES_CACHE_TAG = 'practices';
 
 // The read API is public and anonymous, so any origin may read it. Writes are same-origin only.
 const PUBLIC_CORS = {
 	'Access-Control-Allow-Origin': '*',
-	'Access-Control-Allow-Methods': 'GET, OPTIONS',
+	'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+	'Access-Control-Allow-Headers': 'Accept',
 	'Access-Control-Max-Age': '86400',
 };
 
@@ -74,18 +83,6 @@ function log(level, message, fields = {}) {
 }
 
 // --- Read handlers -------------------------------------------------------------------------------
-
-const PRACTICES_SQL = `
-	SELECT
-		bp.practice_id, bp.title, bp.description, bp.domain,
-		bp.category_id, cat.name AS category_name,
-		bp.feature_id, cf.name AS feature_name, cf.feature_url,
-		bp.recommendation_level, bp.impact_level, bp.difficulty_level,
-		bp.prerequisites, bp.expressions_configuration_details,
-		bp.source_reference, bp.notes, bp.updated_at
-	FROM BestPractices bp
-	LEFT JOIN Categories cat ON bp.category_id = cat.category_id
-	LEFT JOIN CloudflareFeatures cf ON bp.feature_id = cf.feature_id`;
 
 function parseId(value) {
 	const id = Number(value);
@@ -185,18 +182,19 @@ async function handleRead(request, env, ctx, url) {
 	if (request.method === 'OPTIONS') {
 		return new Response(null, { status: 204, headers: PUBLIC_CORS });
 	}
-	if (request.method !== 'GET') {
-		throw new HttpError(405, 'Method not allowed', { Allow: 'GET, OPTIONS', ...PUBLIC_CORS });
+	if (request.method !== 'GET' && request.method !== 'HEAD') {
+		throw new HttpError(405, 'Method not allowed', { Allow: 'GET, HEAD, OPTIONS', ...PUBLIC_CORS });
 	}
 
-	const route = READ_ROUTES[url.pathname];
-	if (!route) throw new HttpError(404, 'API endpoint not found', PUBLIC_CORS);
+	if (!READ_ROUTES[url.pathname] && !isPublicContent(url.pathname)) throw new HttpError(404, 'API endpoint not found', PUBLIC_CORS);
 
 	// Anonymous API: the client IP is the only actor identifier available
 	await enforceRateLimit(env, `${request.headers.get('CF-Connecting-IP') ?? 'unknown'}:${url.pathname}`);
 
 	// Workers Cache sits in front of this call: on a hit, PublicReads.fetch() (and D1) never runs
-	return ctx.exports.PublicReads.fetch(request);
+	const upstream = isPublicContent(url.pathname) ? normalizeContentRequest(request) : new Request(request, { method: 'GET' });
+	const response = await ctx.exports.PublicReads.fetch(upstream);
+	return request.method === 'HEAD' ? new Response(null, response) : response;
 }
 
 export class PublicReads extends WorkerEntrypoint {
@@ -205,6 +203,7 @@ export class PublicReads extends WorkerEntrypoint {
 		const url = new URL(request.url);
 		const route = READ_ROUTES[url.pathname];
 		try {
+			if (isPublicContent(url.pathname)) return await servePublicContent(request, this.env);
 			// Read from the primary: these responses fill the edge cache right after a write purges it, and a
 			// lagging read replica would cache stale data for the whole edge TTL. Workers Cache already serves
 			// reads close to users, so read replicas would only speed up cache misses.
@@ -223,6 +222,7 @@ export class PublicReads extends WorkerEntrypoint {
 		} catch (err) {
 			// Pass the caught value itself so Workers Issues can group it by exception and stack
 			console.error(err);
+			if (isPublicContent(url.pathname)) return contentError(503);
 			return json(
 				{ success: false, error: 'Internal server error' },
 				{ status: 500, headers: { ...PUBLIC_CORS, 'Cache-Control': 'no-store' } },
@@ -413,6 +413,7 @@ export default {
 		try {
 			if (url.pathname === '/dashboard/api/practices') return await handleCreatePractice(request, env, ctx, url);
 			if (url.pathname.startsWith('/api/')) return await handleRead(request, env, ctx, url);
+			if (isPublicContent(url.pathname)) return await handleRead(request, env, ctx, url);
 			// Anything else that reaches the Worker falls back to static assets (and public/404.html)
 			return env.ASSETS.fetch(request);
 		} catch (err) {

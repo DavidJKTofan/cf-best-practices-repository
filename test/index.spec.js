@@ -100,7 +100,7 @@ describe('public read API', () => {
 
 		const response = await call('/api/practices', { method: 'POST', body: '{}' });
 		expect(response.status).toBe(405);
-		expect(response.headers.get('Allow')).toBe('GET, OPTIONS');
+		expect(response.headers.get('Allow')).toBe('GET, HEAD, OPTIONS');
 	});
 
 	it('returns JSON 404 for unknown API routes', async () => {
@@ -150,6 +150,8 @@ describe('write API validation (local-dev bypass)', () => {
 
 		const { data } = await (await call('/api/practices')).json();
 		expect(data.some((p) => p.practice_id === id)).toBe(true);
+		expect(await (await call(`/practices/${id}.md`)).text()).toContain('Enable WAF');
+		expect(await (await call('/sitemap.xml')).text()).toContain(`/practices/${id}</loc>`);
 
 		const row = await env.DB.prepare('SELECT title, category_id, difficulty_level FROM BestPractices WHERE practice_id = ?')
 			.bind(id)

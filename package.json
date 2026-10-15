@@ -7,6 +7,7 @@
 		"dev": "wrangler dev",
 		"start": "wrangler dev",
 		"test": "vitest",
+		"typecheck": "tsc --project jsconfig.json",
 		"cf-typegen": "wrangler types",
 		"db:migrate:local": "wrangler d1 migrations apply DB --local",
 		"db:migrate:remote": "wrangler d1 migrations apply DB --remote",
@@ -15,6 +16,7 @@
 	},
 	"devDependencies": {
 		"@cloudflare/vitest-plugin": "^1.4.2",
+		"typescript": "^7.0.2",
 		"vitest": "^4.1.11",
 		"wrangler": "^4.151.0"
 	},

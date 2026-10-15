@@ -1,0 +1,27 @@
+{
+	"specVersion": "1.0",
+	"host": { "displayName": "Cloudflare L7 Best Practices", "identifier": "https://db.automatic-demo.com/" },
+	"entries": [
+		{
+			"identifier": "urn:air:db.automatic-demo.com:api:practices",
+			"displayName": "Cloudflare L7 best practices read API",
+			"type": "application/vnd.oai.openapi+json",
+			"url": "https://db.automatic-demo.com/openapi.json",
+			"representativeQueries": [
+				"Find WAF recommendations and plan prerequisites",
+				"Find Cloudflare caching performance best practices",
+				"Retrieve configuration examples with official sources"
+			]
+		},
+		{
+			"identifier": "urn:air:db.automatic-demo.com:content:practices",
+			"displayName": "Sourced best practices in Markdown",
+			"type": "text/markdown",
+			"url": "https://db.automatic-demo.com/index.md",
+			"representativeQueries": [
+				"Read application security recommendations",
+				"Compare reliability practices and their implementation difficulty"
+			]
+		}
+	]
+}

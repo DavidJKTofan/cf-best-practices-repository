@@ -61,7 +61,7 @@ form.addEventListener('submit', async (event) => {
 
 		form.reset(); // before showStatus: the reset handler clears the status area
 		const link = document.createElement('a');
-		link.href = `/#practice-${result.id}`;
+		link.href = `/practices/${result.id}`;
 		link.textContent = 'View it in the repository';
 		showStatus('success', 'Practice saved. ', link);
 

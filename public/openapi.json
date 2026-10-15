@@ -1,0 +1,184 @@
+{
+	"openapi": "3.1.0",
+	"info": {
+		"title": "Cloudflare L7 Best Practices — public read API",
+		"version": "1.0.0",
+		"description": "Anonymous, read-only access to a personal educational repository, not official Cloudflare guidance. Validate sources, dates, and plan prerequisites. Search and AI answer retrieval are permitted; AI training is not. Writes require Cloudflare Access and are outside this public contract. GET endpoints also support HEAD and OPTIONS. Respect Retry-After on 429 responses."
+	},
+	"servers": [{ "url": "https://db.automatic-demo.com" }],
+	"externalDocs": { "url": "https://db.automatic-demo.com/api-docs" },
+	"security": [],
+	"paths": {
+		"/api/practices": {
+			"get": {
+				"operationId": "listPractices",
+				"summary": "Search and filter sourced best practices",
+				"description": "Filters combine with AND. Invalid filter values are ignored; unknown valid IDs return no records. No pagination. Practices are ordered by domain, category, title. Cache-Control permits 60 seconds of client caching.",
+				"parameters": [
+					{
+						"name": "search",
+						"in": "query",
+						"description": "Trimmed literal substring of title, description, configuration, prerequisites, or notes; truncated to 200 characters. LIKE wildcards are escaped.",
+						"schema": { "type": "string", "maxLength": 200 }
+					},
+					{ "name": "categoryId", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 2147483647 } },
+					{ "name": "featureId", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 2147483647 } },
+					{ "name": "area", "in": "query", "schema": { "type": "string", "enum": ["Security", "Performance", "Reliability", "General"] } },
+					{
+						"name": "level",
+						"in": "query",
+						"schema": { "type": "string", "enum": ["Mandatory", "Recommended", "Optional", "Situational"] }
+					},
+					{ "name": "impact", "in": "query", "schema": { "type": "string", "enum": ["High", "Medium", "Low"] } }
+				],
+				"responses": {
+					"200": {
+						"description": "Matching practices",
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{ "$ref": "#/components/schemas/Envelope" },
+										{ "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/Practice" } } } }
+									]
+								}
+							}
+						}
+					},
+					"429": { "$ref": "#/components/responses/RateLimited" },
+					"500": { "$ref": "#/components/responses/Error" }
+				}
+			}
+		},
+		"/api/categories": {
+			"get": {
+				"operationId": "listCategories",
+				"summary": "List category IDs and names",
+				"description": "Sorted by name. Client cache TTL: 300 seconds.",
+				"responses": {
+					"200": {
+						"description": "Categories",
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{ "$ref": "#/components/schemas/Envelope" },
+										{ "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/Category" } } } }
+									]
+								}
+							}
+						}
+					},
+					"429": { "$ref": "#/components/responses/RateLimited" },
+					"500": { "$ref": "#/components/responses/Error" }
+				}
+			}
+		},
+		"/api/features": {
+			"get": {
+				"operationId": "listFeatures",
+				"summary": "List Cloudflare feature IDs and documentation URLs",
+				"description": "Sorted by name. Client cache TTL: 300 seconds. A feature name does not establish plan entitlement.",
+				"responses": {
+					"200": {
+						"description": "Features",
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{ "$ref": "#/components/schemas/Envelope" },
+										{ "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/Feature" } } } }
+									]
+								}
+							}
+						}
+					},
+					"429": { "$ref": "#/components/responses/RateLimited" },
+					"500": { "$ref": "#/components/responses/Error" }
+				}
+			}
+		},
+		"/practices/{id}": {
+			"get": {
+				"operationId": "readPractice",
+				"summary": "Read a complete practice in HTML or Markdown",
+				"description": "Request Accept: text/markdown for agent-friendly content. HTML is the default. Both negotiated variants send Vary: Accept. Append .md to the path for explicit Markdown.",
+				"parameters": [
+					{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer", "minimum": 1, "maximum": 2147483647 } }
+				],
+				"responses": {
+					"200": {
+						"description": "Practice including sources, prerequisites, configuration, notes, and freshness",
+						"content": { "text/html": { "schema": { "type": "string" } }, "text/markdown": { "schema": { "type": "string" } } }
+					},
+					"404": { "description": "Practice not found" },
+					"429": { "$ref": "#/components/responses/RateLimited" },
+					"503": { "description": "Content temporarily unavailable" }
+				}
+			}
+		}
+	},
+	"components": {
+		"responses": {
+			"Error": { "description": "API error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+			"RateLimited": {
+				"description": "Rate limit exceeded; wait before retrying",
+				"headers": { "Retry-After": { "schema": { "type": "string", "example": "60" } } },
+				"content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+			}
+		},
+		"schemas": {
+			"Error": {
+				"type": "object",
+				"required": ["success", "error"],
+				"properties": { "success": { "const": false }, "error": { "type": "string" }, "requestId": { "type": "string" } }
+			},
+			"Envelope": {
+				"type": "object",
+				"required": ["success", "data", "count"],
+				"properties": {
+					"success": { "const": true },
+					"count": { "type": "integer", "minimum": 0 },
+					"data": { "type": "array", "items": {} }
+				}
+			},
+			"Category": {
+				"type": "object",
+				"required": ["id", "name"],
+				"properties": { "id": { "type": "integer" }, "name": { "type": "string" } }
+			},
+			"Feature": {
+				"allOf": [
+					{ "$ref": "#/components/schemas/Category" },
+					{ "properties": { "feature_url": { "type": ["string", "null"], "format": "uri" } } }
+				]
+			},
+			"Practice": {
+				"type": "object",
+				"required": ["practice_id", "title", "description", "domain"],
+				"properties": {
+					"practice_id": { "type": "integer" },
+					"title": { "type": "string" },
+					"description": { "type": "string" },
+					"domain": { "type": "string", "enum": ["Security", "Performance", "Reliability", "General"] },
+					"category_id": { "type": ["integer", "null"] },
+					"category_name": { "type": ["string", "null"] },
+					"feature_id": { "type": ["integer", "null"] },
+					"feature_name": { "type": ["string", "null"] },
+					"feature_url": { "type": ["string", "null"] },
+					"recommendation_level": { "type": ["string", "null"] },
+					"impact_level": { "type": ["string", "null"] },
+					"difficulty_level": { "type": ["string", "null"] },
+					"prerequisites": { "type": ["string", "null"] },
+					"expressions_configuration_details": { "type": ["string", "null"] },
+					"source_reference": { "type": ["string", "null"] },
+					"notes": { "type": ["string", "null"] },
+					"updated_at": {
+						"type": ["string", "null"],
+						"description": "Recorded UTC database timestamp (YYYY-MM-DD HH:mm:ss), not a guarantee of current product accuracy."
+					}
+				}
+			}
+		}
+	}
+}

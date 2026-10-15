@@ -177,6 +177,87 @@ kbd {
 	color: var(--text-muted);
 }
 
+/* Crawlable reference pages follow the repository's compact, documentation-first style. */
+.repository-intro {
+	padding-block: 20px;
+	color: var(--text-muted);
+}
+.repository-intro nav {
+	margin-top: 6px;
+	font-size: 0.875rem;
+}
+.practice-link {
+	display: inline-block;
+	margin-top: 6px;
+	font-size: 0.8rem;
+}
+.practice-page {
+	max-width: 960px;
+	padding-block: 32px 64px;
+}
+.practice-page article {
+	margin-top: 32px;
+}
+.practice-page h1 {
+	font-size: clamp(1.8rem, 4vw, 3rem);
+	line-height: 1.15;
+	letter-spacing: -0.035em;
+	margin: 10px 0 20px;
+}
+.practice-page h2 {
+	font-size: 1.2rem;
+	margin-bottom: 12px;
+}
+.practice-page section {
+	margin-top: 32px;
+	padding-top: 24px;
+	border-top: 1px solid var(--border);
+}
+.practice-page section p + p {
+	margin-top: 12px;
+}
+.practice-lede {
+	font-size: 1.125rem;
+	color: var(--text-muted);
+	white-space: pre-wrap;
+}
+.eyebrow {
+	font-family: var(--mono);
+	font-size: 0.8rem;
+	color: var(--text-muted);
+}
+.practice-facts {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+	gap: 20px;
+	margin-top: 28px;
+	padding: 24px;
+	background: var(--surface);
+	border-left: 3px solid var(--accent);
+}
+.practice-facts dt {
+	font-size: 0.75rem;
+	color: var(--text-muted);
+}
+.practice-facts dd {
+	margin-top: 4px;
+	font-weight: 600;
+}
+.prose-text {
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+}
+.practice-page pre {
+	padding: 20px;
+	background: var(--code-bg);
+	border: 1px solid var(--border);
+	overflow: auto;
+	font-size: 0.875rem;
+}
+.practice-page code {
+	font-family: var(--mono);
+}
+
 .skip-link {
 	position: absolute;
 	top: 8px;

@@ -17,7 +17,7 @@ function apply(theme) {
 	button?.setAttribute('title', theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme');
 }
 
-apply(root.dataset.theme === 'dark' ? 'dark' : 'light');
+apply(savedTheme() ?? root.dataset.theme ?? (systemDark.matches ? 'dark' : 'light'));
 
 button?.addEventListener('click', () => {
 	const next = root.dataset.theme === 'dark' ? 'light' : 'dark';

@@ -200,6 +200,7 @@ function renderRow(p, terms) {
 				highlight(p.title, terms),
 			),
 			el('p', { className: 'desc' }, highlight(p.description, terms)),
+			el('a', { className: 'practice-link', href: `/practices/${id}` }, 'Full practice & sources'),
 		),
 		el('td', { className: 'col-category', dataset: { label: 'Category' } }, p.category_name ?? '—'),
 		el('td', { className: 'col-domain' }, el('span', { className: `badge domain-${slug(p.domain)}` }, p.domain)),
@@ -258,7 +259,8 @@ function renderDetail(p, terms) {
 				{ className: 'detail-meta' },
 				source && el('a', { href: source, target: '_blank', rel: 'noopener noreferrer' }, 'Source documentation'),
 				p.feature_url && el('a', { href: p.feature_url, target: '_blank', rel: 'noopener noreferrer' }, `${p.feature_name} docs`),
-				el('a', { href: `#practice-${id}` }, 'Permalink'),
+				el('a', { href: `/practices/${id}` }, 'Permalink'),
+				el('a', { href: `/practices/${id}.md` }, 'Markdown'),
 				updated && !Number.isNaN(updated.getTime())
 					? el('span', {}, 'Updated ', el('time', { dateTime: updated.toISOString() }, updated.toLocaleDateString()))
 					: null,
