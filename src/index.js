@@ -177,7 +177,7 @@ async function enforceRateLimit(env, key) {
 	} catch (err) {
 		if (err instanceof HttpError) throw err;
 		// Fail open: the rate limiter is a soft guard and must not take the API down
-		log('error', 'rate limiter error', { error: String(err) });
+		console.error(err);
 	}
 }
 
@@ -245,7 +245,7 @@ async function purgeReadCache(ctx) {
 		const result = await ctx.exports.PublicReads.purgePractices();
 		if (!result?.success) log('error', 'cache purge failed', { errors: result?.errors });
 	} catch (err) {
-		log('error', 'cache purge failed', { error: String(err) });
+		console.error(err);
 	}
 }
 

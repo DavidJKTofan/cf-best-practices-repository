@@ -25,7 +25,7 @@ Workers Cache is enabled per entrypoint ([`wrangler.jsonc`](wrangler.jsonc)), no
 ## Getting Started
 
 ```bash
-npm install
+npm ci
 npx wrangler d1 create D1_DB_L7_BEST_PRACTICES --location weur   # once, if the database does not exist
 ./create_d1_schema.sh --local --seed                              # local schema + production snapshot
 cp .dev.vars.example .dev.vars                                    # allow dashboard writes on localhost
@@ -68,11 +68,13 @@ This site opts out of indexing and AI use:
 
 Pull requests with new best practices or improvements are welcome. Content updates are re-runnable SQL files in [`data/`](data/). Allowed users can also add entries through the dashboard.
 
+The [2026-10-15 content review](data/content-review-2026-10-15.md) records sources, corrections, and production-copy verification. Rehearse a new data file twice on an isolated production export before remote application; see [AGENTS.md](AGENTS.md). After applying it remotely, invalidate cached reads and refresh the production seed. Example hostnames, thresholds, and token IDs must be adapted; feature labels are not proof of a particular account's entitlement.
+
 ## Disclaimer
 
 This is a personal project for educational and informational purposes only. It is not an official Cloudflare product, and its content does not represent official Cloudflare guidance or the views of the author's employer.
 
-The recorded best practices are provided "as is", without warranty of any kind. They may be incomplete, outdated, or unsuitable for your environment, plan, or compliance requirements. Always validate them against the [official Cloudflare documentation](https://developers.cloudflare.com/) and test changes (for example, with the _Log_ action) before applying them in production.
+The recorded best practices are provided "as is", without warranty of any kind. They may be incomplete, outdated, or unsuitable for your environment, plan, or compliance requirements. Always validate them against the [official Cloudflare documentation](https://developers.cloudflare.com/) and observe matches before enforcement (_Log_ for custom/rate limiting rules requires Enterprise; API clients cannot solve interstitial challenges).
 
 The author and contributors are not responsible or liable for any damage, outage, security incident, data loss, or other consequence arising from the use of, or reliance on, any information in this repository or on the website. You use it at your own risk.
 

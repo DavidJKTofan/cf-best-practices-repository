@@ -6,6 +6,7 @@
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "cf-best-practices-repository",
 	"main": "src/index.js",
+	"upload_source_maps": true,
 	"compatibility_date": "2026-10-01",
 	"compatibility_flags": ["nodejs_compat"],
 	"assets": {
