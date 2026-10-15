@@ -1,0 +1,37 @@
+package-lock.json
+  s_749da05f4577b4::t_4dd698fab3d70a 15,1522-1861,2749-2783
+public/.well-known/ai-catalog.json
+  s_749da05f4577b4::t_0cbc6979a8a34c 1-27
+public/api-docs.html
+  s_749da05f4577b4::t_c6cd7a0ee1ff91 1-111
+public/index.html
+  s_749da05f4577b4::t_eb58493c670bf5 11-28,50,100-108,228-232
+public/webmcp.js
+  s_749da05f4577b4::t_83a40460157b63 1-35
+src/content-negotiation.ts
+  s_749da05f4577b4::t_7551244db5b017 1-22
+src/content-rendering.ts
+  s_749da05f4577b4::t_98d0417c87d813 1-147
+src/index.js
+  s_749da05f4577b4::t_17cf2a6e59537d 2,9-16,51-52,62-63,185-186,189,195-197,206,225,416
+test/public-content.spec.js
+  s_749da05f4577b4::t_934532f8405f4f 1-249
+wrangler.jsonc
+  s_749da05f4577b4::t_19b02f6804551e 17-28
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "96df78a2e9d195055bf4a71d237b12c03a73caf0",
+  "prompts": {},
+  "sessions": {
+    "s_749da05f4577b4": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ec0da4b81ffeCNhe1Hjd09VeXn",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "dtofan <38673017+DavidJKTofan@users.noreply.github.com>"
+    }
+  }
+}
