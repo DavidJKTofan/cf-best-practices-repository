@@ -29,17 +29,7 @@
 		<meta name="color-scheme" content="light dark" />
 		<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
 		<meta name="theme-color" content="#17181b" media="(prefers-color-scheme: dark)" />
-		<script>
-			// Apply the theme before first paint so dark-mode users never see a light flash
-			(function () {
-				var t;
-				try {
-					t = localStorage.getItem('theme');
-				} catch (e) {}
-				if (t !== 'light' && t !== 'dark') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-				document.documentElement.dataset.theme = t;
-			})();
-		</script>
+		<script src="/theme-init.js"></script>
 		<!-- Start the data request in parallel with CSS/JS instead of after app.js runs -->
 		<link rel="preload" href="/api/practices" as="fetch" crossorigin />
 		<link rel="stylesheet" href="/style.css" />
@@ -98,10 +88,7 @@
 
 		<main id="main">
 			<section class="container repository-intro" aria-label="About this repository">
-				<p>
-					Sourced recommendations for Cloudflare application security, performance, and reliability. Each practice includes plan
-					prerequisites, configuration guidance, and links to official documentation.
-				</p>
+				<p>Cloudflare security, performance, and reliability practices—with prerequisites, configuration examples, and official sources.</p>
 				<nav aria-label="Repository formats">
 					<a href="/index.md">Markdown</a> · <a href="/api-docs">API documentation</a> · <a href="/llms.txt">Agent index</a>
 				</nav>
@@ -132,10 +119,11 @@
 								spellcheck="false"
 								enterkeyhint="search"
 								aria-keyshortcuts="/ Control+K Meta+K"
+								disabled
 							/>
 							<kbd class="search-hint" aria-hidden="true">/</kbd>
 						</div>
-						<button class="btn filters-toggle" type="button" aria-expanded="false" aria-controls="filters">
+						<button class="btn filters-toggle" type="button" aria-expanded="false" aria-controls="filters" disabled>
 							<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
 								<path d="M3 5h18M6 12h12M10 19h4" stroke-linecap="round" />
 							</svg>
@@ -144,35 +132,67 @@
 						</button>
 
 						<div id="filters" class="filters">
-							<label class="visually-hidden" for="filter-category">Category</label>
-							<select id="filter-category" data-filter="category">
-								<option value="">All categories</option>
-							</select>
-							<label class="visually-hidden" for="filter-feature">Feature</label>
-							<select id="filter-feature" data-filter="feature">
-								<option value="">All features</option>
-							</select>
-							<label class="visually-hidden" for="filter-domain">Domain</label>
-							<select id="filter-domain" data-filter="domain">
-								<option value="">All domains</option>
-							</select>
-							<label class="visually-hidden" for="filter-level">Recommendation level</label>
-							<select id="filter-level" data-filter="level">
-								<option value="">All levels</option>
-							</select>
-							<label class="visually-hidden" for="filter-impact">Impact</label>
-							<select id="filter-impact" data-filter="impact">
-								<option value="">Any impact</option>
-							</select>
-							<label class="visually-hidden" for="filter-difficulty">Difficulty</label>
-							<select id="filter-difficulty" data-filter="difficulty">
-								<option value="">Any difficulty</option>
-							</select>
+							<label class="filter-field" for="filter-category"
+								><span>Category</span>
+								<select id="filter-category" data-filter="category" disabled>
+									<option value="">All categories</option>
+								</select></label
+							>
+							<label class="filter-field" for="filter-feature"
+								><span>Feature</span>
+								<select id="filter-feature" data-filter="feature" disabled>
+									<option value="">All features</option>
+								</select></label
+							>
+							<label class="filter-field" for="filter-domain"
+								><span>Domain</span>
+								<select id="filter-domain" data-filter="domain" disabled>
+									<option value="">All domains</option>
+								</select></label
+							>
+							<label class="filter-field" for="filter-level"
+								><span>Level</span>
+								<select id="filter-level" data-filter="level" disabled>
+									<option value="">All levels</option>
+								</select></label
+							>
+							<label class="filter-field" for="filter-impact"
+								><span>Impact</span>
+								<select id="filter-impact" data-filter="impact" disabled>
+									<option value="">Any impact</option>
+								</select></label
+							>
+							<label class="filter-field" for="filter-difficulty"
+								><span>Difficulty</span>
+								<select id="filter-difficulty" data-filter="difficulty" disabled>
+									<option value="">Any difficulty</option>
+								</select></label
+							>
 							<button id="reset" class="btn btn-ghost" type="button" disabled>Reset</button>
 						</div>
 					</div>
 
 					<div class="results-bar">
+						<label class="mobile-sort" for="sort-order"
+							><span>Sort by</span>
+							<select id="sort-order" disabled>
+								<option value="">Default order</option>
+								<option value="title:asc">Title: A–Z</option>
+								<option value="title:desc">Title: Z–A</option>
+								<option value="category:asc">Category: A–Z</option>
+								<option value="category:desc">Category: Z–A</option>
+								<option value="domain:asc">Domain: A–Z</option>
+								<option value="domain:desc">Domain: Z–A</option>
+								<option value="level:asc">Level: mandatory first</option>
+								<option value="level:desc">Level: situational first</option>
+								<option value="impact:asc">Impact: high first</option>
+								<option value="impact:desc">Impact: low first</option>
+								<option value="difficulty:asc">Difficulty: easy first</option>
+								<option value="difficulty:desc">Difficulty: complex first</option>
+								<option value="feature:asc">Feature: A–Z</option>
+								<option value="feature:desc">Feature: Z–A</option>
+							</select>
+						</label>
 						<p id="summary" class="summary" role="status" aria-live="polite">Loading practices…</p>
 						<button id="toggle-all" class="btn btn-link" type="button" disabled>Expand all</button>
 					</div>
@@ -180,6 +200,10 @@
 			</section>
 
 			<div class="container">
+				<div id="load-notice" class="load-notice" role="status" aria-live="polite" hidden>
+					<p id="load-message"></p>
+					<button id="retry-load" class="btn" type="button">Try again</button>
+				</div>
 				<div id="results" class="table-wrap" tabindex="-1">
 					<table class="practices">
 						<caption class="visually-hidden">

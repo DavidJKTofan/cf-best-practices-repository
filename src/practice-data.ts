@@ -5,7 +5,7 @@ export const PRACTICES_SQL = `
 		bp.category_id, cat.name AS category_name,
 		bp.feature_id, cf.name AS feature_name, cf.feature_url,
 		bp.recommendation_level, bp.impact_level, bp.difficulty_level,
-		bp.prerequisites, bp.expressions_configuration_details,
+		bp.prerequisites, bp.expression, bp.expressions_configuration_details,
 		bp.source_reference, bp.notes, bp.updated_at
 	FROM BestPractices bp
 	LEFT JOIN Categories cat ON bp.category_id = cat.category_id
@@ -25,6 +25,7 @@ export interface Practice {
 	impact_level: string | null;
 	difficulty_level: string | null;
 	prerequisites: string | null;
+	expression: string | null;
 	expressions_configuration_details: string | null;
 	source_reference: string | null;
 	notes: string | null;

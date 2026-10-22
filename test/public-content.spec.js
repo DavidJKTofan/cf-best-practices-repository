@@ -4,6 +4,7 @@ import { beforeAll, describe, expect, it, vi } from 'vitest';
 import worker from '../src/index.js';
 import { prefersMarkdown } from '../src/content-negotiation';
 import { normalizeContentRequest } from '../src/public-content';
+import { practiceHtml, practiceMarkdown } from '../src/content-rendering';
 
 const ORIGIN = 'https://db.automatic-demo.com';
 const ID = 901001;
@@ -76,6 +77,8 @@ describe('crawlable public documents', () => {
 		expect(html).toContain(`href="/practices/${ID}"`);
 		expect(html).toContain('Throttle abusive API clients');
 		expect(html).not.toContain('class="skeleton"');
+		expect(html).toContain('data-label="Impact"');
+		expect(html).toContain('data-label="Difficulty"');
 		const schemas = [...html.matchAll(/<script type="application\/ld\+json">(.*?)<\/script>/gs)].map((match) => JSON.parse(match[1]));
 		expect(schemas.some((schema) => schema['@type'] === 'CollectionPage')).toBe(true);
 		expect(html).not.toContain('</script><script>alert(1)</script>');
@@ -132,6 +135,22 @@ describe('crawlable public documents', () => {
 			expect(response.status).toBe(404);
 			expect(response.headers.get('Cache-Control')).toBe('no-store');
 		}
+	});
+
+	it('renders safe, progressive code blocks and does not repeat identical configuration', async () => {
+		const practice = await env.DB.prepare('SELECT * FROM BestPractices WHERE practice_id = ?').bind(ID).first();
+		practice.expression = CONFIG;
+		const html = practiceHtml(practice);
+		expect(html).toContain('data-copy-kind="expression"');
+		expect(html).toContain('aria-label="Example expression"');
+		expect(html).toContain('&lt;script&gt;not executable&lt;/script&gt;');
+		expect(html).not.toContain('data-copy-kind="configuration"');
+		expect(html).toContain('src="/code-blocks.js"');
+		expect(html).toContain('class="icon-btn theme-switch"');
+		const markdown = practiceMarkdown(practice);
+		expect(markdown).toContain('````text');
+		expect(markdown.split(CONFIG)).toHaveLength(2);
+		expect(markdown).not.toContain('## Configuration guidance');
 	});
 
 	it('never turns legacy non-HTTP source data into active links or structured citations', async () => {

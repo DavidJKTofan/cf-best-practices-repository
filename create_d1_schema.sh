@@ -48,6 +48,7 @@ npx wrangler d1 migrations apply DB "$TARGET"
 if [[ "$SEED" == true ]]; then
 	echo "==> Loading initial_data.sql ($TARGET)"
 	npx wrangler d1 execute DB "$TARGET" --file=./initial_data.sql
+	npx wrangler d1 execute DB "$TARGET" --file=./data/copyable-expressions.sql
 fi
 
 # Refresh query planner statistics after schema/data changes

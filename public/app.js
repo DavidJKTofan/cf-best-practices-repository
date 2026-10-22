@@ -1,4 +1,5 @@
 // public/app.js — loads all practices once, then searches, filters, and sorts them client-side.
+import { createCodeBlock } from './code-blocks.js';
 
 const API_URL = '/api/practices'; // must match the <link rel="preload"> in index.html
 
@@ -15,6 +16,10 @@ const els = {
 	header: document.querySelector('.site-header'),
 	backToTop: document.getElementById('back-to-top'),
 	sortButtons: document.querySelectorAll('th [data-sort]'),
+	sortOrder: document.getElementById('sort-order'),
+	loadNotice: document.getElementById('load-notice'),
+	loadMessage: document.getElementById('load-message'),
+	retry: document.getElementById('retry-load'),
 };
 
 const COLUMN_COUNT = 7;
@@ -54,6 +59,8 @@ const state = {
 	sort: null,
 	dir: 'asc',
 	expanded: new Set(),
+	loaded: false,
+	loading: false,
 };
 
 const collator = new Intl.Collator(undefined, { sensitivity: 'base', numeric: true });
@@ -111,6 +118,7 @@ function buildSearchIndex(p) {
 		p.title,
 		p.description,
 		p.prerequisites,
+		p.expression,
 		p.expressions_configuration_details,
 		p.notes,
 		p.category_name,
@@ -173,7 +181,7 @@ function populateFilters() {
 		const sorted = [...options].sort(([va, la], [vb, lb]) =>
 			config.order === 'alpha' ? collator.compare(la, lb) : rank(param, va) - rank(param, vb) || collator.compare(la, lb),
 		);
-		select.append(...sorted.map(([value, label]) => new Option(label, value)));
+		select.replaceChildren(select.options[0], ...sorted.map(([value, label]) => new Option(label, value)));
 	}
 }
 
@@ -200,7 +208,6 @@ function renderRow(p, terms) {
 				highlight(p.title, terms),
 			),
 			el('p', { className: 'desc' }, highlight(p.description, terms)),
-			el('a', { className: 'practice-link', href: `/practices/${id}` }, 'Full practice & sources'),
 		),
 		el('td', { className: 'col-category', dataset: { label: 'Category' } }, p.category_name ?? '—'),
 		el('td', { className: 'col-domain' }, el('span', { className: `badge domain-${slug(p.domain)}` }, p.domain)),
@@ -221,8 +228,8 @@ function renderRow(p, terms) {
 	);
 }
 
-function detailItem(label, content) {
-	return content ? el('div', { className: 'detail-item' }, el('dt', {}, label), el('dd', {}, content)) : null;
+function detailItem(label, content, className = '') {
+	return content ? el('div', { className: `detail-item ${className}`.trim() }, el('dt', {}, label), el('dd', {}, content)) : null;
 }
 
 function renderDetail(p, terms) {
@@ -231,14 +238,15 @@ function renderDetail(p, terms) {
 	const source = p.source_reference?.startsWith('https://') ? p.source_reference : null;
 	const updated = p.updated_at ? new Date(`${p.updated_at.replace(' ', 'T')}Z`) : null;
 
-	const code = config
-		? el(
-				'div',
-				{ className: 'code-block' },
-				el('pre', { tabIndex: 0, 'aria-label': 'Configuration or expression' }, el('code', {}, highlight(config, terms))),
-				el('button', { type: 'button', className: 'btn btn-small copy-btn', dataset: { copy: config } }, 'Copy'),
-			)
-		: null;
+	const codeItem = (heading, text, kind) =>
+		text
+			? el(
+					'div',
+					{ className: 'detail-item detail-code' },
+					el('dt', {}, heading),
+					el('dd', {}, createCodeBlock(text, kind, highlight(text, terms))),
+				)
+			: null;
 
 	return el(
 		'tr',
@@ -249,10 +257,13 @@ function renderDetail(p, terms) {
 			el(
 				'dl',
 				{ className: 'detail-grid' },
+				detailItem('Feature', p.feature_name ?? 'Not recorded', 'tablet-fact'),
+				detailItem('Difficulty', p.difficulty_level ?? 'Not rated', 'tablet-fact'),
 				detailItem('Description', highlight(p.description, terms)),
 				detailItem('Prerequisites', p.prerequisites && highlight(p.prerequisites, terms)),
 				detailItem('Notes', p.notes && highlight(p.notes, terms)),
-				code && el('div', { className: 'detail-item detail-code' }, el('dt', {}, 'Configuration / expression'), el('dd', {}, code)),
+				codeItem('Example expression', p.expression, 'expression'),
+				config !== p.expression && codeItem('Configuration guidance', config, 'configuration'),
 			),
 			el(
 				'p',
@@ -315,15 +326,20 @@ function updateChrome(practices) {
 	els.filterCount.textContent = activeFilters;
 	els.reset.disabled = !filtered && !state.sort;
 
-	const allExpanded = practices.length > 0 && practices.every((p) => state.expanded.has(p.practice_id));
-	els.toggleAll.disabled = practices.length === 0;
-	els.toggleAll.textContent = allExpanded ? 'Collapse all' : 'Expand all';
-	els.toggleAll.dataset.mode = allExpanded ? 'collapse' : 'expand';
+	updateExpansionControls(practices);
+	els.sortOrder.value = state.sort ? `${state.sort}:${state.dir}` : '';
 
 	for (const button of els.sortButtons) {
 		const th = button.closest('th');
 		th.setAttribute('aria-sort', button.dataset.sort === state.sort ? (state.dir === 'asc' ? 'ascending' : 'descending') : 'none');
 	}
+}
+
+function updateExpansionControls(practices = visiblePractices()) {
+	const allExpanded = practices.length > 0 && practices.every((p) => state.expanded.has(p.practice_id));
+	els.toggleAll.disabled = practices.length === 0;
+	els.toggleAll.textContent = allExpanded ? 'Collapse all' : 'Expand all';
+	els.toggleAll.dataset.mode = allExpanded ? 'collapse' : 'expand';
 }
 
 function toggleRow(id, force) {
@@ -343,6 +359,7 @@ function toggleRow(id, force) {
 	}
 	row.classList.toggle('is-expanded', expand);
 	row.querySelector('.row-toggle').setAttribute('aria-expanded', String(expand));
+	updateExpansionControls();
 }
 
 // --- URL state (shareable, back/forward friendly) -------------------------------------------------
@@ -374,7 +391,7 @@ function readUrl() {
 	}
 
 	const sort = params.get('sort');
-	state.sort = sort in SORTS ? sort : null;
+	state.sort = Object.hasOwn(SORTS, sort) ? sort : null;
 	state.dir = params.get('dir') === 'desc' ? 'desc' : 'asc';
 }
 
@@ -408,6 +425,7 @@ function resetAll() {
 		state.filters[select.dataset.filter] = '';
 	}
 	render();
+	els.search.focus();
 }
 
 // --- Data loading ---------------------------------------------------------------------------------
@@ -424,38 +442,46 @@ async function fetchPractices() {
 	return body.data;
 }
 
-function renderError(message) {
-	els.summary.textContent = 'Could not load practices';
+function renderError() {
+	// Keep SSR links (or the previous successful view) usable when enhancement fails.
+	const rows = els.rows.querySelectorAll('tr.row').length;
+	els.summary.textContent = rows ? `${rows} practices` : 'Could not load practices';
 	els.rows.removeAttribute('aria-busy');
-	els.rows.replaceChildren(
-		el(
-			'tr',
-			{ className: 'state-row' },
-			el(
-				'td',
-				{ colSpan: COLUMN_COUNT },
-				el(
-					'div',
-					{ className: 'state state-error', role: 'alert' },
-					el('p', {}, `Failed to load best practices: ${message}`),
-					el('button', { type: 'button', className: 'btn', dataset: { action: 'retry' } }, 'Try again'),
-				),
-			),
-		),
-	);
+	els.loadMessage.textContent = rows
+		? 'Search and filters could not load. You can still browse every practice below.'
+		: 'Practices could not load. Please try again.';
+	els.loadNotice.hidden = false;
+	if (!rows && !state.loaded) els.rows.replaceChildren();
 }
 
-async function load() {
+function setEnhancementsAvailable(available) {
+	for (const control of [els.search, els.filtersToggle, els.sortOrder, ...els.filters.querySelectorAll('select'), ...els.sortButtons]) {
+		control.disabled = !available;
+	}
+}
+
+async function load(focusSearch = false) {
+	if (state.loading) return;
+	state.loading = true;
+	els.retry.disabled = true;
+	setEnhancementsAvailable(state.loaded);
 	try {
 		const practices = await fetchPractices();
 		state.practices = practices.map((p) => ({ ...p, _search: buildSearchIndex(p) }));
 		populateFilters();
 		readUrl();
+		state.loaded = true;
+		setEnhancementsAvailable(true);
+		els.loadNotice.hidden = true;
 		render();
 		openFromHash();
+		if (focusSearch) els.search.focus();
 	} catch (error) {
-		console.error('Failed to load practices', error);
-		renderError(error.message);
+		console.error(error);
+		renderError();
+	} finally {
+		state.loading = false;
+		els.retry.disabled = false;
 	}
 }
 
@@ -485,6 +511,14 @@ els.filters.addEventListener('change', (event) => {
 });
 
 els.reset.addEventListener('click', resetAll);
+els.retry.addEventListener('click', () => load(true));
+
+els.sortOrder.addEventListener('change', () => {
+	const [sort, dir] = els.sortOrder.value.split(':');
+	state.sort = sort || null;
+	state.dir = dir || 'asc';
+	render();
+});
 
 els.filtersToggle.addEventListener('click', () => {
 	const expanded = els.filtersToggle.getAttribute('aria-expanded') !== 'true';
@@ -509,25 +543,9 @@ for (const button of els.sortButtons) {
 	});
 }
 
-els.rows.addEventListener('click', async (event) => {
+els.rows.addEventListener('click', (event) => {
 	const action = event.target.closest('[data-action]')?.dataset.action;
 	if (action === 'reset') return resetAll();
-	if (action === 'retry') {
-		els.summary.textContent = 'Loading practices…';
-		return load();
-	}
-
-	const copyButton = event.target.closest('.copy-btn');
-	if (copyButton) {
-		try {
-			await navigator.clipboard.writeText(copyButton.dataset.copy);
-			copyButton.textContent = 'Copied';
-		} catch {
-			copyButton.textContent = 'Copy failed';
-		}
-		setTimeout(() => (copyButton.textContent = 'Copy'), 1500);
-		return;
-	}
 
 	// Clicking anywhere on a row (except links) toggles its details
 	const row = event.target.closest('tr.row');

@@ -146,7 +146,22 @@
 					</div>
 
 					<div class="field field-wide">
-						<label for="configuration">Configuration / expression</label>
+						<label for="expression">Example expression</label>
+						<textarea
+							id="expression"
+							name="expression"
+							class="code"
+							maxlength="5000"
+							rows="3"
+							spellcheck="false"
+							aria-describedby="expression-hint"
+						></textarea>
+						<small id="expression-hint" class="hint"
+							>Only the Rules language expression. Put actions, thresholds, prerequisites, and instructions below.</small
+						>
+					</div>
+					<div class="field field-wide">
+						<label for="configuration">Configuration guidance</label>
 						<textarea
 							id="configuration"
 							name="expressions_configuration_details"
@@ -156,7 +171,9 @@
 							spellcheck="false"
 							aria-describedby="configuration-hint"
 						></textarea>
-						<small id="configuration-hint" class="hint">Step-by-step instructions or a Rules language expression.</small>
+						<small id="configuration-hint" class="hint"
+							>Setup instructions, API configuration, actions, thresholds, or commands. Copied separately from the expression.</small
+						>
 					</div>
 
 					<div class="field field-wide">

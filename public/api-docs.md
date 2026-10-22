@@ -20,9 +20,11 @@ Public reads are anonymous: no API key, registration, cookies, or JavaScript nee
 
 The response is `{"success": true, "data": [...], "count": 123}`. Count is the number of returned records. There is no pagination. Nullable fields indicate missing information, not a default recommendation or plan entitlement.
 
+`expression` is an optional, explicitly authored Rules expression. `expressions_configuration_details` retains the full configuration guidance, including actions, thresholds, commands, or counting expressions. Never treat that guidance as a paste-ready match expression. Adapt examples and check prerequisites before use.
+
 `/api/practices` filters combine with AND:
 
-- `search`: literal substring in title, description, configuration, prerequisites, or notes; trimmed to 200 characters. SQL wildcard characters are treated literally.
+- `search`: literal substring in title, description, expression, configuration, prerequisites, or notes; trimmed to 200 characters. SQL wildcard characters are treated literally.
 - `categoryId`, `featureId`: positive integer IDs from taxonomy endpoints.
 - `area`: Security, Performance, Reliability, General.
 - `level`: Mandatory, Recommended, Optional, Situational.

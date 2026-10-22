@@ -6,7 +6,9 @@ A searchable repository of security, performance, and reliability best practices
 
 - Instant search with highlighting, filters, sortable columns, expandable details, and canonical practice URLs (`/practices/<id>`; old `/#practice-<id>` links still work)
 - Shareable views: search, filter, and sort state is kept in the URL
-- Responsive: sticky toolbar and table header on desktop, cards on phones, light/dark themes
+- Responsive: sticky toolbar and table header on desktop, sortable cards on phones, light/dark themes
+- Shared expression/configuration copy controls, line wrapping, and accessible feedback on catalog details and canonical practice pages
+- Server-rendered practice links remain available if the interactive API request fails
 - Dashboard to add entries, protected by Cloudflare Access
 - Crawlable, server-rendered content with canonical metadata, structured data, sitemap, and source/update information
 - Agent-friendly Markdown negotiation, explicit Markdown URLs, public OpenAPI discovery, agent skill, and read-only WebMCP search in supporting browsers
@@ -42,11 +44,29 @@ Test and deploy:
 npm test
 npm run typecheck
 npx wrangler deploy --dry-run
+# Rehearse and take a recovery bookmark before remote changes; see the upgrade guidance below.
 ./create_d1_schema.sh --remote   # apply pending migrations (idempotent)
+npx wrangler d1 execute DB --remote --file=data/copyable-expressions.sql
 npm run deploy
+npm run db:seed:refresh          # only after the remote data update
 ```
 
 After changing bindings in `wrangler.jsonc`, run `npm run cf-typegen`.
+
+### Copyable expressions upgrade
+
+Migration `0004_copyable_expression.sql` adds the optional `expression` field. Apply it **before deploying** code that reads this field. The existing configuration field and practice IDs are preserved. The dashboard accepts expressions separately from actions, thresholds, and other guidance; public JSON, HTML, and Markdown expose the same distinction.
+
+After migrations, apply `data/copyable-expressions.sql` to separate 51 already-recorded examples from their configuration guidance. The data file is re-runnable and leaves populated expression fields alone. Local seeding applies it automatically. To upgrade an existing local database:
+
+```bash
+npm run db:migrate:local
+npx wrangler d1 execute DB --local --file=data/copyable-expressions.sql
+```
+
+For production, first rehearse the migration and data file twice on an isolated production export and take a Time Travel bookmark, as described in [AGENTS.md](AGENTS.md). Apply the migration and data file remotely before deploying, invalidate cached representations, then refresh `initial_data.sql` from production. This data separation is not a new review of product availability; all recorded prerequisites and caveats still apply.
+
+The [2026-10-22 rollout verification](docs/frontend-rollout-2026-10-22.md) records the production migration, deployment, desktop/mobile checks, and refreshed-seed validation.
 
 ## API
 

@@ -164,6 +164,35 @@ describe('write API validation (local-dev bypass)', () => {
 		expect(response.status).toBe(415);
 	});
 
+	it('keeps explicit expressions separate from guidance and searches expression-only content', async () => {
+		const expression = '(http.host eq "expression-only.example.com")';
+		const guidance = 'Action: Block. Set thresholds from observed traffic.';
+		const created = await post(
+			'/dashboard/api/practices',
+			{
+				...VALID_PRACTICE,
+				expression,
+				expressions_configuration_details: guidance,
+			},
+			local,
+		);
+		expect(created.status).toBe(201);
+		const { id } = await created.json();
+		const { data } = await (await call('/api/practices?search=expression-only.example.com')).json();
+		expect(data).toContainEqual(expect.objectContaining({ practice_id: id, expression, expressions_configuration_details: guidance }));
+		const markdown = await (await call(`/practices/${id}.md`)).text();
+		expect(markdown).toContain(`## Example expression\n\n\`\`\`text\n${expression}`);
+		expect(markdown).toContain(`## Configuration guidance\n\n\`\`\`text\n${guidance}`);
+	});
+
+	it('rejects oversized or non-string expressions', async () => {
+		for (const expression of ['x'.repeat(5001), { expression: 'not a string' }]) {
+			const response = await post('/dashboard/api/practices', { ...VALID_PRACTICE, expression }, local);
+			expect(response.status).toBe(400);
+			expect((await response.json()).error).toContain('expression');
+		}
+	});
+
 	it('rejects malformed and non-object bodies', async () => {
 		expect((await post('/dashboard/api/practices', '{bad', local)).status).toBe(400);
 		expect((await post('/dashboard/api/practices', [], local)).status).toBe(400);

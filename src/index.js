@@ -29,6 +29,7 @@ const TEXT_LIMITS = {
 	title: 500,
 	description: 5000,
 	prerequisites: 5000,
+	expression: 5000,
 	expressions_configuration_details: 5000,
 	source_reference: 1000,
 	notes: 5000,
@@ -98,7 +99,7 @@ async function listPractices(db, url) {
 	if (search) {
 		// Escape LIKE wildcards so "rate_limit" matches literally
 		const pattern = `%${search.replace(/[\\%_]/g, '\\$&')}%`;
-		const columns = ['bp.title', 'bp.description', 'bp.expressions_configuration_details', 'bp.prerequisites', 'bp.notes'];
+		const columns = ['bp.title', 'bp.description', 'bp.expression', 'bp.expressions_configuration_details', 'bp.prerequisites', 'bp.notes'];
 		conditions.push(`(${columns.map((c) => `${c} LIKE ? ESCAPE '\\'`).join(' OR ')})`);
 		bindings.push(...columns.map(() => pattern));
 	}
@@ -342,6 +343,7 @@ function validatePractice(body) {
 		impact_level: oneOf('impact_level', true),
 		difficulty_level: oneOf('difficulty_level', false),
 		prerequisites: text('prerequisites', false),
+		expression: text('expression', false),
 		expressions_configuration_details: text('expressions_configuration_details', false),
 		source_reference: text('source_reference', true),
 		notes: text('notes', false),
