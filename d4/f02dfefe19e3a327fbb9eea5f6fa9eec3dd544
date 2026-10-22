@@ -1,0 +1,29 @@
+initial_data.sql
+  s_193bc94f360045::t_e29018a4923966 50-155
+public/api-docs.html
+  s_193bc94f360045::t_9e3ec6c8635d4c 64-68
+public/code-blocks.js
+  s_193bc94f360045::t_095b30746c38f2 1-78
+public/dashboard.html
+  s_193bc94f360045::t_5125b2a3f3595e 149-164,174-176
+public/index.html
+  s_193bc94f360045::t_59112ca566f710 32,91,122,126,135-170,176-195,203-206
+test/index.spec.js
+  s_193bc94f360045::t_702f9663f9ee55 167-195
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "d4f02dfefe19e3a327fbb9eea5f6fa9eec3dd544",
+  "prompts": {},
+  "sessions": {
+    "s_193bc94f360045": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ec1223aa8ffewSuKSgOiFg26LT",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "dtofan <38673017+DavidJKTofan@users.noreply.github.com>"
+    }
+  }
+}
