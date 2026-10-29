@@ -8,6 +8,7 @@
 		"types": [],
 		"noEmit": true,
 		"allowJs": true,
+		"checkJs": true,
 		"strict": true,
 		"skipLibCheck": true
 	},

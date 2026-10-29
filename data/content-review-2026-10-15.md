@@ -110,8 +110,8 @@ Updating the data directly bypasses the application's purge RPC. A redeploy star
 
 - Repeated the pre-deployment checks: 19 tests passed, zero audit findings, current binding types, clean source formatting/whitespace, and a successful deploy dry run.
 - Exported production again and rehearsed the patch twice in a fresh isolated database. All 102 original IDs were retained; 73 practices changed, 29 were unchanged, and four were added. Repeat-run comparisons, including timestamps and sequences, showed zero differences; native SQLite integrity checking returned `ok`.
-- Captured pre-change D1 Time Travel bookmark: `000002bb-00000000-00005105-c5b619bd7724a1058686b74e92c1070e`.
-- Applied `data/content-review-2026-10-15.sql` remotely: 10 statements completed successfully. The four additions have IDs **104–107**. Post-application bookmark: `000002bb-0000000c-00005105-c63c4cd11f8b453914163601e2887a7b`.
+- Captured pre- and post-change D1 Time Travel bookmarks; recovery identifiers are intentionally omitted from public documentation.
+- Applied `data/content-review-2026-10-15.sql` remotely: 10 statements completed successfully. The four additions have IDs **104–107**.
 - Ran the read-only verification file and independently checked its result sets through the D1 query API: **106 practices**, all 102 original IDs present, and zero foreign-key, required-content, duplicate-title, enum, text-limit, or obsolete-example violations.
 - Deployed using **`npx wrangler deploy`** to <https://db.automatic-demo.com>. Version **`a510bd8d-b274-4473-91fd-ca562db04d66`** serves 100% of traffic; deployment recorded at **2026-10-15 10:31:43 UTC**. Previous Worker version: `1d134c28-f43e-4365-b6ba-d73aaedb8195`.
 - Live smoke checks passed: all 106 practices' content and taxonomy fields matched the rehearsal; repeated practice reads returned `Cf-Cache-Status: HIT`; categories, features, literal search, and Tunnel filtering returned the expected results. The homepage returned 200 with `noindex`; anonymous dashboard access redirected to Cloudflare Access.

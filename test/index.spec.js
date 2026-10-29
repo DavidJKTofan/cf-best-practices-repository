@@ -1,7 +1,11 @@
 import { env } from 'cloudflare:workers';
 import { createExecutionContext, waitOnExecutionContext } from 'cloudflare:test';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
-import worker from '../src/index.js';
+import worker from '../src/index';
+import { createPractice, handleCreatePractice } from '../src/practice-creation';
+import { validatePractice } from '../src/practice-validation';
+import { withWriteRetry } from '../src/d1-retry';
+import { normalizeApiRequest } from '../src/read-api';
 
 const ORIGIN = 'https://db.automatic-demo.com';
 
@@ -29,7 +33,7 @@ function post(path, body, { headers = {}, ...envOverrides } = {}) {
 		path,
 		{
 			method: 'POST',
-			headers: { 'Content-Type': 'application/json', 'CF-Connecting-IP': '::1', ...headers },
+			headers: { 'Content-Type': 'application/json', 'CF-Connecting-IP': '::1', 'Idempotency-Key': crypto.randomUUID(), ...headers },
 			body: typeof body === 'string' ? body : JSON.stringify(body),
 		},
 		envOverrides,
@@ -232,5 +236,160 @@ describe('schema', () => {
 				"INSERT INTO BestPractices (title, description, domain, difficulty_level) VALUES ('t', 'd', 'Security', 'High')",
 			).run(),
 		).rejects.toThrow(/CHECK constraint failed/);
+	});
+});
+
+describe('durable practice creation', () => {
+	const local = { ALLOW_LOCAL_WRITES: 'true' };
+	const path = '/dashboard/api/practices';
+
+	it('requires a well-formed key', async () => {
+		for (const key of ['', 'short', 'a'.repeat(129), 'unsafe key with spaces']) {
+			expect((await post(path, VALID_PRACTICE, { ...local, headers: { 'Idempotency-Key': key } })).status).toBe(400);
+		}
+	});
+
+	it('replays normalized data with the original ID and no additional insert', async () => {
+		const headers = { 'Idempotency-Key': crypto.randomUUID() };
+		const data = { ...VALID_PRACTICE, title: 'Replay-safe creation' };
+		const first = await post(path, data, { ...local, headers });
+		const second = await post(path, { ...data, category_id: 1, title: ` ${data.title} ` }, { ...local, headers });
+		expect(first.status).toBe(201);
+		expect(second.status).toBe(201);
+		expect(second.headers.get('Cache-Control')).toBe('no-store');
+		expect(await second.json()).toEqual(await first.json());
+		expect(await env.DB.prepare('SELECT COUNT(*) AS n FROM BestPractices WHERE title = ?').bind(data.title).first('n')).toBe(1);
+	});
+
+	it('rejects different data for a completed key', async () => {
+		const headers = { 'Idempotency-Key': crypto.randomUUID() };
+		expect((await post(path, VALID_PRACTICE, { ...local, headers })).status).toBe(201);
+		const conflict = await post(path, { ...VALID_PRACTICE, title: 'Conflicting retry' }, { ...local, headers });
+		expect(conflict.status).toBe(409);
+		expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM BestPractices WHERE title = 'Conflicting retry'").first('n')).toBe(0);
+	});
+
+	it('serializes concurrent retries and concurrent conflicting payloads', async () => {
+		const headers = { 'Idempotency-Key': crypto.randomUUID() };
+		const responses = await Promise.all(Array.from({ length: 5 }, () => post(path, VALID_PRACTICE, { ...local, headers })));
+		expect(responses.every((response) => response.status === 201)).toBe(true);
+		const bodies = await Promise.all(responses.map((response) => response.json()));
+		expect(new Set(bodies.map((body) => body.id)).size).toBe(1);
+		const conflictHeaders = { 'Idempotency-Key': crypto.randomUUID() };
+		const conflicts = await Promise.all(
+			['Concurrent A', 'Concurrent B'].map((title) => post(path, { ...VALID_PRACTICE, title }, { ...local, headers: conflictHeaders })),
+		);
+		expect(conflicts.map((response) => response.status).sort()).toEqual([201, 409]);
+	});
+
+	it('recovers when D1 commits but the result is lost', async () => {
+		let lost = false;
+		const db = {
+			prepare: (sql) => env.DB.prepare(sql),
+			batch: vi.fn(async (statements) => {
+				const result = await env.DB.batch(statements);
+				if (!lost) {
+					lost = true;
+					throw new Error('Network connection lost');
+				}
+				return result;
+			}),
+		};
+		const practice = validatePractice({ ...VALID_PRACTICE, title: 'Lost commit response' });
+		const id = await createPractice(db, practice, 'test-subject', crypto.randomUUID());
+		expect(db.batch).toHaveBeenCalledTimes(2);
+		expect(await env.DB.prepare('SELECT practice_id FROM BestPractices WHERE title = ?').bind(practice.title).all()).toMatchObject({
+			results: [{ practice_id: id }],
+		});
+	});
+
+	it('rolls back the practice if recording its receipt fails', async () => {
+		const db = {
+			prepare: (sql) => env.DB.prepare(sql),
+			batch: (statements) =>
+				env.DB.batch([
+					statements[0],
+					env.DB.prepare("INSERT INTO PracticeCreations (operation_key, payload_hash, practice_id) VALUES ('broken', 'hash', NULL)"),
+				]),
+		};
+		const practice = validatePractice({ ...VALID_PRACTICE, title: 'Rolled back creation' });
+		await expect(createPractice(db, practice, 'test-subject', crypto.randomUUID())).rejects.toThrow(/NOT NULL/);
+		expect(await env.DB.prepare('SELECT COUNT(*) AS n FROM BestPractices WHERE title = ?').bind(practice.title).first('n')).toBe(0);
+	});
+
+	it('recovers on a later client retry after all committed responses were lost', async () => {
+		vi.spyOn(Math, 'random').mockReturnValue(0);
+		const db = {
+			prepare: (sql) => env.DB.prepare(sql),
+			batch: vi.fn(async (statements) => {
+				await env.DB.batch(statements);
+				throw new Error('Network connection lost');
+			}),
+		};
+		const key = crypto.randomUUID();
+		const practice = validatePractice({ ...VALID_PRACTICE, title: 'Retry after exhausted commit responses' });
+		await expect(createPractice(db, practice, 'test-subject', key)).rejects.toThrow('Network connection lost');
+		expect(db.batch).toHaveBeenCalledTimes(4);
+		const recovered = await createPractice(env.DB, practice, 'test-subject', key);
+		expect(await env.DB.prepare('SELECT practice_id FROM BestPractices WHERE title = ?').bind(practice.title).all()).toMatchObject({
+			results: [{ practice_id: recovered }],
+		});
+	});
+
+	it('scopes keys to the authenticated subject and stores neither raw keys nor identities', async () => {
+		const key = crypto.randomUUID();
+		const practice = validatePractice(VALID_PRACTICE);
+		const a = await createPractice(env.DB, practice, 'subject-a', key);
+		const b = await createPractice(env.DB, practice, 'subject-b', key);
+		expect(a).not.toBe(b);
+		const receipts = await env.DB.prepare('SELECT operation_key FROM PracticeCreations WHERE practice_id IN (?, ?)').bind(a, b).all();
+		expect(receipts.results).toHaveLength(2);
+		for (const receipt of receipts.results) expect(receipt.operation_key).toMatch(/^[a-f0-9]{64}$/);
+	});
+
+	it('does not consume a key on validation/foreign-key failure', async () => {
+		const headers = { 'Idempotency-Key': crypto.randomUUID() };
+		expect((await post(path, { ...VALID_PRACTICE, category_id: 999 }, { ...local, headers })).status).toBe(400);
+		expect((await post(path, VALID_PRACTICE, { ...local, headers })).status).toBe(201);
+	});
+
+	it('bounds transient retries and never retries permanent failures', async () => {
+		const transient = vi.fn().mockRejectedValue(new Error('Network connection lost'));
+		await expect(withWriteRetry(transient, { baseDelayMs: 0 })).rejects.toThrow('Network connection lost');
+		expect(transient).toHaveBeenCalledTimes(4);
+		const permanent = vi.fn().mockRejectedValue(new Error('FOREIGN KEY constraint failed'));
+		await expect(withWriteRetry(permanent)).rejects.toThrow(/FOREIGN KEY/);
+		expect(permanent).toHaveBeenCalledOnce();
+	});
+
+	it('keeps a committed write successful after purge failure and purges again on replay', async () => {
+		vi.spyOn(console, 'error').mockImplementation(() => {});
+		const purgePractices = vi.fn().mockRejectedValueOnce(new Error('Purge unavailable')).mockResolvedValue({ success: true });
+		const ctx = { exports: { PublicReads: { purgePractices } } };
+		const key = crypto.randomUUID();
+		const create = () => {
+			const request = new Request(`${ORIGIN}${path}`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json', 'Idempotency-Key': key, 'CF-Connecting-IP': '::1' },
+				body: JSON.stringify(VALID_PRACTICE),
+			});
+			return handleCreatePractice(request, { ...env, ...local }, ctx, new URL(request.url));
+		};
+		const first = await create();
+		const replay = await create();
+		expect(first.status).toBe(201);
+		expect(await replay.json()).toEqual(await first.json());
+		expect(purgePractices).toHaveBeenCalledTimes(2);
+	});
+});
+
+describe('API cache key normalization', () => {
+	it('keeps only effective, canonical filters in a fixed order', () => {
+		const request = new Request(
+			`${ORIGIN}/api/practices?unused=x&impact=High&area=invalid&categoryId=01&categoryId=2&search=%20rate%00_limit%20`,
+		);
+		expect(normalizeApiRequest(request).url).toBe(`${ORIGIN}/api/practices?search=rate_limit&categoryId=1&impact=High`);
+		expect(normalizeApiRequest(new Request(`${ORIGIN}/api/features?unused=1`)).url).toBe(`${ORIGIN}/api/features`);
+		expect(normalizeApiRequest(new Request(`${ORIGIN}/api/practices?search=${'x'.repeat(300)}`)).url.split('search=')[1]).toHaveLength(200);
 	});
 });

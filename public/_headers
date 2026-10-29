@@ -1,5 +1,5 @@
 # Headers for static assets (https://developers.cloudflare.com/workers/static-assets/headers/).
-# Worker responses set their own headers in src/index.js and src/public-content.ts.
+# Worker responses set their own headers in src/http.ts and src/public-content.ts.
 #
 # The CSP deliberately has no script-src: Cloudflare injects an inline JavaScript Detections
 # script into HTML, which a strict script-src would block unless a per-request nonce is set

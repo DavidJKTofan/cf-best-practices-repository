@@ -5,7 +5,7 @@
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "cf-best-practices-repository",
-	"main": "src/index.js",
+	"main": "src/index.ts",
 	"upload_source_maps": true,
 	"compatibility_date": "2026-10-01",
 	"compatibility_flags": ["nodejs_compat"],
@@ -29,7 +29,7 @@
 	},
 	// Workers Cache (https://developers.cloudflare.com/workers/cache/) only in front of the PublicReads entrypoint
 	// (cached D1 reads). The default entrypoint stays uncached: enabling cache for it would also bill static
-	// asset requests, which are otherwise free. See the gateway pattern in src/index.js.
+	// asset requests, which are otherwise free. See the gateway pattern in src/index.ts.
 	"exports": {
 		"default": { "type": "worker", "cache": { "enabled": false } },
 		"PublicReads": { "type": "worker", "cache": { "enabled": true } },

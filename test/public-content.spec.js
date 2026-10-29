@@ -1,7 +1,7 @@
 import { env } from 'cloudflare:workers';
 import { createExecutionContext, waitOnExecutionContext } from 'cloudflare:test';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
-import worker from '../src/index.js';
+import worker from '../src/index';
 import { prefersMarkdown } from '../src/content-negotiation';
 import { normalizeContentRequest } from '../src/public-content';
 import { practiceHtml, practiceMarkdown } from '../src/content-rendering';

@@ -18,15 +18,17 @@ A searchable repository of security, performance, and reliability best practices
 | Layer           | Implementation                                                                                                                                                                                                                              |
 | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Frontend        | Vanilla HTML/CSS/JS in [`public/`](public/); CSS, JS, images, and discovery files use free [Workers Static Assets](https://developers.cloudflare.com/workers/static-assets/). The homepage is a server-rendered static template.            |
-| API / documents | Uncached gateway in [`src/index.js`](src/index.js); public document rendering/negotiation in [`src/`](src/). Explicit Worker-first paths cover public documents and APIs.                                                                   |
-| Read caching    | [Workers Cache](https://developers.cloudflare.com/workers/cache/) on the `PublicReads` entrypoint: cache hits skip Worker code and D1; writes purge by tag                                                                                  |
+| API / documents | Typed gateway in [`src/index.ts`](src/index.ts); read filters/cache normalization in [`src/read-api.ts`](src/read-api.ts); Access, bounded JSON reading, validation, and durable creation in separate `src/` modules.                       |
+| Read caching    | [Workers Cache](https://developers.cloudflare.com/workers/cache/) on `PublicReads`: hits skip that entrypoint's code and D1, but the uncached gateway still runs; writes/replays attempt a tag purge                                        |
 | Database        | [D1](https://developers.cloudflare.com/d1/) with [migrations](migrations/); [`initial_data.sql`](initial_data.sql) is a production snapshot (`npm run db:seed:refresh`)                                                                     |
 | Auth            | [Cloudflare Access](https://developers.cloudflare.com/cloudflare-one/policies/access/) on `/dashboard`; the Worker also validates the Access JWT on writes                                                                                  |
 | Observability   | Workers Logs, Traces, and [Issues](https://developers.cloudflare.com/workers/observability/issues/) (error monitoring); [Local Explorer](https://developers.cloudflare.com/workers/local-development/local-explorer/) during `wrangler dev` |
 
 Workers Cache is enabled per entrypoint ([`wrangler.jsonc`](wrangler.jsonc)), not Worker-wide: enabling it on the default entrypoint would bill static asset requests, which are otherwise free ([pricing](https://developers.cloudflare.com/workers/cache/#pricing)).
 
-The homepage, practice pages, Markdown exports, sitemap, agent index, and negotiated API docs invoke the gateway so responses can be rendered or negotiated. D1-derived reads use the primary database and share the `practices` purge tag across HTML, Markdown, JSON, and discovery. Accept is normalized before the cached entrypoint; `Vary: Accept` keeps representations separate. UI query strings do not multiply identical cached documents. All other file assets remain asset-first.
+The homepage, practice pages, Markdown exports, sitemap, agent index, and negotiated API docs invoke the gateway so responses can be rendered or negotiated. D1-derived reads use the primary database and share the `practices` purge tag across HTML, Markdown, JSON, and discovery. Accept is normalized before the cached entrypoint; `Vary: Accept` keeps representations separate. Documents drop UI queries; JSON APIs retain only canonical, effective filters. All other file assets remain asset-first.
+
+Edge responses are fresh for one hour and eligible for stale-while-revalidate for another 24 hours. Writes await a purge attempt, but a failed purge does not undo the write. Purges do not clear browser caches, which have separate TTLs; immediate global read-after-write visibility is not guaranteed.
 
 ## Getting Started
 
@@ -38,20 +40,35 @@ cp .dev.vars.example .dev.vars                                    # allow dashbo
 npm run dev
 ```
 
+For a fork, replace the Worker name, D1 identifiers, custom domain, and Access issuer/audience in `wrangler.jsonc`. Update canonical URLs in `src/content-rendering.ts` and public discovery files for the new hostname. Use a separate database and Access application for staging; never point local development at production via `remote: true`.
+
 Test and deploy:
 
 ```bash
-npm test
+npm test -- --run
 npm run typecheck
+npm run content:check             # Python 3; offline seed + twice-applied active patches
+npx wrangler types --check
 npx wrangler deploy --dry-run
-# Rehearse and take a recovery bookmark before remote changes; see the upgrade guidance below.
+# Only with owner approval, after a production-copy rehearsal and private recovery bookmark:
 ./create_d1_schema.sh --remote   # apply pending migrations (idempotent)
 npx wrangler d1 execute DB --remote --file=data/copyable-expressions.sql
+npx wrangler d1 execute DB --remote --file=data/content-review-2026-10-29.sql
 npm run deploy
 npm run db:seed:refresh          # only after the remote data update
 ```
 
 After changing bindings in `wrangler.jsonc`, run `npm run cf-typegen`.
+
+[CI](.github/workflows/verify.yml) runs tests, strict type checking, catalog integrity/repeat-run checks, generated-type verification, and a deployment dry run without deployment credentials. It never applies remote migrations or deploys.
+
+### Durable creation upgrade
+
+**Deployed on 2026-10-29.** See the [rollout verification](docs/rollout-2026-10-29.md) for migration, production-copy rehearsal, live checks, and remaining manual validation.
+
+Apply migration `0005_practice_creations.sql` **before deploying** the new write handler/dashboard. It adds a private `PracticeCreations` table without rebuilding catalog tables or changing existing IDs. Creation and its receipt use one transactional D1 batch; retries cannot commit a practice without its receipt. Keep receipts as long as their practices, and include them in private full backups, not public seed exports. Do not delete them as a routine cleanup.
+
+Rehearse on an isolated production export before remote writes, following the [D1 best practices](https://developers.cloudflare.com/d1/best-practices/) and [import/export guide](https://developers.cloudflare.com/d1/best-practices/import-export-data/). Keep full exports and Time Travel bookmarks outside this public repository. Then, with owner approval, take a current bookmark, apply pending migrations, deploy code and dashboard together, and verify authenticated retry/conflict behavior and cache invalidation. `initial_data.sql` remains a production-only catalog snapshot; this migration does not require changing it.
 
 ### Copyable expressions upgrade
 
@@ -80,6 +97,8 @@ The [2026-10-22 rollout verification](docs/frontend-rollout-2026-10-22.md) recor
 | `POST /dashboard/api/practices` | Create a practice (Access-protected, JSON body)                                                     |
 
 Dynamic document routes and JSON API reads support GET, HEAD, and OPTIONS. Public read resources allow anonymous cross-origin access. A 429 response includes `Retry-After: 60`. The API schema documents filters and nullable fields; UI query names differ from API parameters.
+
+Dashboard writes require JSON of at most **64 KiB in bytes** and a random `Idempotency-Key` (16–128 letters, digits, hyphens, or underscores). Retry unchanged data with the same key: the API returns the original `201` and ID, or `409` if the completed key's normalized data differs. Keys are scoped to the verified Access identity (user subject or signed service-token identity) and retained durably. The dashboard keeps its key across retries/tab reloads, without storing form contents. See [the write contract](public/auth.md) for reset/storage limitations. Writes are same-origin only and responses are `no-store`.
 
 ## SEO, AEO, and agent access
 
@@ -129,14 +148,27 @@ The [2026-10-15 release verification](docs/agent-readiness.md#verification-and-r
 
 Pull requests with new best practices or improvements are welcome. Content updates are re-runnable SQL files in [`data/`](data/). Allowed users can also add entries through the dashboard.
 
-The [2026-10-15 content review](data/content-review-2026-10-15.md) records sources, corrections, and production-copy verification. Rehearse a new data file twice on an isolated production export before remote application; see [AGENTS.md](AGENTS.md). After applying it remotely, invalidate cached reads and refresh the production seed. Example hostnames, thresholds, and token IDs must be adapted; feature labels are not proof of a particular account's entitlement.
+The [2026-10-29 content review](data/content-review-2026-10-29.md) was applied to production: five practices corrected, 13 added, **119 total**, including two Reliability entries. `initial_data.sql` is the refreshed production catalog. Local seeding replays the review patch safely; existing local databases can apply it after migrations and `data/copyable-expressions.sql`. The [previous review](data/content-review-2026-10-15.md) remains a historical source record.
+
+Run `npm run content:check` (Python 3) to validate the production seed and active patches, including repeat-run timestamps/sequences. This offline check does not replace rehearsal on an isolated current production export before remote application; see [AGENTS.md](AGENTS.md). After an approved remote update, invalidate cached reads and refresh the production seed. Example hostnames, thresholds, and token IDs must be adapted; feature labels are not proof of a particular account's entitlement. Record product/phase/action, prerequisites and maturity, limitations, observation/enforcement/rollback, official sources, and a separate fact-verification date in the editorial review.
 
 ## Disclaimer
 
 This is a personal project for educational and informational purposes only. It is not an official Cloudflare product, and its content does not represent official Cloudflare guidance or the views of the author's employer.
 
-The recorded best practices are provided "as is", without warranty of any kind. They may be incomplete, outdated, or unsuitable for your environment, plan, or compliance requirements. Always validate them against the [official Cloudflare documentation](https://developers.cloudflare.com/) and observe matches before enforcement (_Log_ for custom/rate limiting rules requires Enterprise; API clients cannot solve interstitial challenges).
+The recorded best practices are provided "as is", without warranty of any kind. They may be incomplete, outdated, or unsuitable for your environment, plan, or compliance requirements. Always validate them against the [official Cloudflare documentation](https://developers.cloudflare.com/) and observe matches before enforcement. Action availability is product/phase-specific: request-phase custom/rate limiting _Log_ requires Enterprise; the response-WAF announcement describes separate Log/Block availability. API clients cannot solve interstitial challenges.
 
 The author and contributors are not responsible or liable for any damage, outage, security incident, data loss, or other consequence arising from the use of, or reliance on, any information in this repository or on the website. You use it at your own risk.
 
 Cloudflare and related marks are trademarks of Cloudflare, Inc.
+
+```text
+THIS SOFTWARE IS PROVIDED BY CLOUDFLARE "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL CLOUDFLARE BE LIABLE FOR ANY DIRECT,
+INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+```

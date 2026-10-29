@@ -7,11 +7,12 @@
 		"dev": "wrangler dev",
 		"start": "wrangler dev",
 		"test": "vitest",
+		"content:check": "python3 scripts/verify-content.py",
 		"typecheck": "tsc --project jsconfig.json",
 		"cf-typegen": "wrangler types",
 		"db:migrate:local": "wrangler d1 migrations apply DB --local",
 		"db:migrate:remote": "wrangler d1 migrations apply DB --remote",
-		"db:seed:local": "wrangler d1 execute DB --local --file=./initial_data.sql && wrangler d1 execute DB --local --file=./data/copyable-expressions.sql",
+		"db:seed:local": "wrangler d1 execute DB --local --file=./initial_data.sql && wrangler d1 execute DB --local --file=./data/copyable-expressions.sql && wrangler d1 execute DB --local --file=./data/content-review-2026-10-29.sql",
 		"db:seed:refresh": "wrangler d1 export DB --remote --no-schema --table Categories --table CloudflareFeatures --table BestPractices --output=./initial_data.sql"
 	},
 	"devDependencies": {
