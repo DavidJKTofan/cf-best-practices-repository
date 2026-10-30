@@ -1,0 +1,92 @@
+---
+import { DISCLAIMER, SITE_NAME, SITE_URL } from '../content-rendering';
+import '../styles/field-guide.css';
+interface Props {
+	title: string;
+	description?: string;
+	canonical: string;
+	markdown?: string;
+	schema?: unknown;
+	noindex?: boolean;
+	mainClass?: string;
+}
+const {
+	title,
+	description = 'Unofficial, sourced Cloudflare recommendations and implementation patterns.',
+	canonical,
+	markdown,
+	schema,
+	noindex = false,
+	mainClass,
+} = Astro.props;
+const absolute = `${SITE_URL}${canonical}`;
+const structured = schema ? JSON.stringify(schema).replace(/</g, '\\u003c') : null;
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>{title} | {SITE_NAME}</title>
+		<meta name="description" content={description} />
+		<meta name="color-scheme" content="light dark" />
+		{noindex && <meta name="robots" content="noindex" />}
+		<link rel="canonical" href={absolute} />
+		{markdown && <link rel="alternate" type="text/markdown" href={markdown} />}
+		<link rel="icon" href="/favicon.png" />
+		<meta property="og:type" content={canonical.startsWith('/practices/') ? 'article' : 'website'} />
+		<meta property="og:title" content={title} />
+		<meta property="og:description" content={description} />
+		<meta property="og:url" content={absolute} />
+		<meta property="og:site_name" content={SITE_NAME} />
+		<meta name="twitter:card" content="summary" />
+		<script is:inline src="/theme-init.js"></script>
+		<script is:inline type="module" src="/theme.js"></script>
+		<script is:inline type="module" src="/code-blocks.js"></script>
+		<script is:inline type="module" src="/webmcp.js"></script>
+		<slot name="head" />
+		{structured && <script is:inline type="application/ld+json" set:html={structured} />}
+	</head>
+	<body>
+		<a class="skip-link" href="#main">
+			Skip to content
+		</a>
+		<header class="masthead page-width">
+			<a class="wordmark" href="/">
+				<img src="/favicon.png" width="28" height="28" alt="" />
+				<strong>Cloudflare Field Guide</strong>
+			</a>
+			<nav aria-label="Main navigation">
+				<a href="/catalog" aria-current={canonical.split('?')[0] === '/catalog' ? 'page' : undefined}>
+					Catalog
+				</a>
+				<a href="/api-docs">API docs</a>
+				<button class="theme-switch" type="button" aria-label="Toggle color theme">
+					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+						<circle cx="12" cy="12" r="8" />
+						<path d="M12 4a8 8 0 0 1 0 16Z" fill="currentColor" stroke="none" />
+					</svg>
+					<span>Theme</span>
+				</button>
+			</nav>
+		</header>
+		<main class:list={['page-width', mainClass]} id="main">
+			<slot />
+		</main>
+		<footer class="page-width footer">
+			<p>{DISCLAIMER}</p>
+			<div class="footer-links">
+				<a href="/llms.txt">Agent index</a>
+				<a href="/openapi.json">OpenAPI</a>
+				{markdown && (
+					<a href={markdown} data-markdown-link>
+						Read as Markdown
+					</a>
+				)}
+				<a href="https://github.com/DavidJKTofan/cf-best-practices-repository#disclaimer">Disclaimer & liability</a>
+			</div>
+			<small>Not affiliated with or endorsed by Cloudflare. Cloudflare and related marks belong to Cloudflare, Inc.</small>
+		</footer>
+	</body>
+</html>

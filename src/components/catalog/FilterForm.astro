@@ -1,0 +1,82 @@
+---
+import type { CatalogQuery } from '../../modules/catalog/v2-filters';
+import type { catalogFacets } from '../../modules/catalog/v2-queries';
+import { TYPE_LABELS } from '../../content/presentation';
+interface Props {
+	query: CatalogQuery;
+	facets: Awaited<ReturnType<typeof catalogFacets>>['data'];
+	action?: string;
+	familyLocked?: boolean;
+}
+const { query, facets, action = '/catalog', familyLocked = false } = Astro.props;
+const groups = [
+	{ key: 'family', label: 'Product family', options: facets.families },
+	{ key: 'product', label: 'Product', options: facets.products },
+	{ key: 'type', label: 'Content type', options: facets.types.map((t) => ({ ...t, label: TYPE_LABELS[t.slug] ?? t.slug })) },
+	{ key: 'outcome', label: 'Desired outcome', options: facets.outcomes },
+] as const;
+const visibleGroups = groups.filter((group) => (!familyLocked || group.key !== 'family') && (group.options.length > 0 || query[group.key]));
+---
+
+<form method="get" action={action} class="filters" role="search" aria-label="Search and filter guidance">
+	<label class="search-field">
+		Search guidance
+		<input name="q" type="search" value={query.q} placeholder="A product, problem, or pattern…" maxlength="400" autocomplete="off" />
+	</label>
+	<details
+		class="filter-disclosure"
+		open={visibleGroups.some((group) => query[group.key]) || query.sort !== 'title' || query.pageSize !== 20}
+	>
+		<summary>Filters & sort</summary>
+		<div class="filter-grid">
+			{visibleGroups.map(({ key, label, options }) => (
+				<label>
+					{label}
+					<select name={key}>
+						<option value="">All</option>
+						{query[key] && !options.some((o) => o.slug === query[key]) && (
+							<option value={query[key]} selected>
+								{query[key]} (0)
+							</option>
+						)}
+						{options.map((option) => (
+							<option value={option.slug} selected={query[key] === option.slug}>
+								{option.label} ({option.count})
+							</option>
+						))}
+					</select>
+				</label>
+			))}
+			<label>
+				Sort by
+				<select name="sort">
+					<option value="title" selected={query.sort === 'title'}>
+						Title A–Z
+					</option>
+					<option value="newest" selected={query.sort === 'newest'}>
+						Editorial update
+					</option>
+				</select>
+			</label>
+			<label>
+				Per page
+				<select name="pageSize">
+					{[10, 20, 50].includes(query.pageSize) ? null : (
+						<option value={query.pageSize} selected>
+							{query.pageSize}
+						</option>
+					)}
+					{[10, 20, 50].map((n) => (
+						<option value={n} selected={query.pageSize === n}>
+							{n}
+						</option>
+					))}
+				</select>
+			</label>
+		</div>
+	</details>
+	<div class="form-actions">
+		<button type="submit">Search</button>
+		<a href={action}>Clear filters</a>
+	</div>
+</form>

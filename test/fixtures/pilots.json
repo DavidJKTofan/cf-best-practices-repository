@@ -1,0 +1,251 @@
+[
+	{
+		"schemaVersion": 1,
+		"type": "rule-policy",
+		"title": "Observe unexpected methods on one read-only page",
+		"summary": "Compare methods against a single endpoint contract. Keep the match expression separate from the action, and observe legitimate traffic before considering enforcement.",
+		"primaryFamily": "application-services",
+		"families": ["application-services"],
+		"products": ["waf"],
+		"outcomes": ["protect-applications"],
+		"applicability": {
+			"requires": [
+				"A proxied hostname and an agreed method contract for the exact endpoint.",
+				"Enterprise entitlement for the custom-rule Log action used in this observation example."
+			],
+			"excludes": [
+				"Do not apply this GET/HEAD-only method set to write APIs, preflight endpoints, or an entire hostname.",
+				"This is not an authentication or authorization control."
+			],
+			"dependencies": [
+				"Existing terminating security rules can stop a request before this rule. Review rule order and the available analytics for your plan."
+			]
+		},
+		"sources": [
+			{
+				"url": "https://developers.cloudflare.com/ruleset-engine/rules-language/fields/reference/http.request.method/",
+				"title": "HTTP request method field"
+			},
+			{ "url": "https://developers.cloudflare.com/waf/custom-rules/", "title": "Custom rules and action availability" },
+			{ "url": "https://developers.cloudflare.com/waf/feature-interoperability/", "title": "Security feature order and interoperability" },
+			{ "url": "https://developers.cloudflare.com/ruleset-engine/rulesets-api/dry-run/", "title": "Ruleset configuration dry run" }
+		],
+		"evidence": "public-docs",
+		"maturity": "ga",
+		"modifiedAt": "2026-10-30",
+		"factVerifiedAt": "2026-10-30",
+		"reviewDueAt": "2027-01-30",
+		"body": {
+			"product": "waf",
+			"phase": "http_request_firewall_custom",
+			"scope": "Zone-level custom rule, www.example.com/public/about only. Replace this example hostname and endpoint with an owned, reviewed target.",
+			"conditions": [
+				"Match the exact host and path.",
+				"Match methods outside the endpoint's agreed GET/HEAD set. Include OPTIONS if this endpoint needs CORS preflight."
+			],
+			"availability": [
+				"WAF custom rules exist on all plans with different quotas; the request-phase Log action requires Enterprise.",
+				"Where Log is unavailable, review available analytics before considering a narrowly scoped alternative. Do not substitute a browser challenge on an API."
+			],
+			"expression": "(http.host eq \"www.example.com\" and http.request.uri.path eq \"/public/about\" and not http.request.method in {\"GET\" \"HEAD\"})",
+			"action": "Log for the observation phase; it does not block the matching request. Configure the action separately from the expression.",
+			"rollout": [
+				"Inventory browser, health-check, integration, and CORS methods with the endpoint owner.",
+				"Validate the expression and configuration without treating a dry run as a real-traffic match test.",
+				"On an approved non-production hostname, enable Log and inspect representative legitimate requests. Decide separately whether enforcement is warranted."
+			],
+			"validation": [
+				"GET and HEAD should not match; an unexpected method on this exact path should match.",
+				"The same method on a different host or path should not match.",
+				"Verify required OPTIONS requests and account for rules that terminate evaluation earlier."
+			],
+			"rollback": [
+				"Disable this rule if scope or expected-method assumptions are wrong.",
+				"If later enforcement was approved, revert to observation or disable the rule, then confirm legitimate application behavior."
+			]
+		}
+	},
+	{
+		"schemaVersion": 1,
+		"type": "reference-architecture",
+		"title": "Browser access to a private origin with Access and Tunnel",
+		"summary": "Publish a web application through a public hostname while keeping its origin off the public inbound path. Access makes the identity decision; Tunnel provides connectivity, not authorization.",
+		"primaryFamily": "cloudflare-one",
+		"families": ["cloudflare-one"],
+		"products": ["access", "tunnel"],
+		"outcomes": ["connect-private-applications"],
+		"applicability": {
+			"requires": [
+				"An HTTP(S) application reachable by cloudflared and an owned hostname routed through Cloudflare.",
+				"An Access self-hosted public application, identity provider, and a narrow application policy."
+			],
+			"excludes": [
+				"This public-hostname browser pattern is not private-IP routing, a site-to-site VPN, or general network access.",
+				"Non-browser clients need an explicitly chosen supported authentication flow; a login redirect is not an API credential."
+			],
+			"dependencies": [
+				"Confirm Access seat, logging, device-posture, and retention entitlements independently; this topology is not a universal plan promise.",
+				"Connector hosts need permitted outbound connectivity, DNS, and secure access to the origin. Protect connector credentials."
+			]
+		},
+		"sources": [
+			{
+				"url": "https://developers.cloudflare.com/cloudflare-one/access-controls/applications/http-apps/self-hosted-public-app/",
+				"title": "Add a self-hosted public application"
+			},
+			{
+				"url": "https://developers.cloudflare.com/tunnel/reference/origin-parameters/#access",
+				"title": "Require Access validation in cloudflared"
+			},
+			{ "url": "https://developers.cloudflare.com/tunnel/concepts/routing/", "title": "Tunnel routing, replicas, and load balancing" },
+			{
+				"url": "https://developers.cloudflare.com/cloudflare-one/access-controls/applications/http-apps/authorization-cookie/validating-json/",
+				"title": "Validate the Access application JWT"
+			}
+		],
+		"evidence": "public-docs",
+		"maturity": "ga",
+		"modifiedAt": "2026-10-30",
+		"factVerifiedAt": "2026-10-30",
+		"reviewDueAt": "2027-01-30",
+		"body": {
+			"assumptions": [
+				"The user has a browser and the application supports an identity-aware reverse proxy.",
+				"The application is published at app.example.com. The hostname is public; the origin need not accept public inbound connections."
+			],
+			"components": [
+				"Browser, Cloudflare proxy, Access application/policy, and identity provider.",
+				"A Tunnel with cloudflared connectors able to reach the origin.",
+				"Origin application with its own application-level authorization and session handling where required."
+			],
+			"flows": [
+				"The browser resolves app.example.com and connects to Cloudflare over HTTPS.",
+				"Access evaluates the application policy and completes identity-provider authentication when needed.",
+				"Allowed requests travel through the Tunnel to cloudflared. Configure Protect with Access to validate the application JWT before proxying to the origin.",
+				"cloudflared connects to the origin service; the response returns through the tunnel and Cloudflare to the browser."
+			],
+			"trustBoundaries": [
+				"The identity provider establishes identity; the Access policy determines application access. A Tunnel route alone does not authorize a user.",
+				"The connector-to-origin network is a separate trust boundary. Use verified origin TLS where the threat model requires it; do not disable certificate validation to hide a configuration fault.",
+				"Remove or restrict alternate origin hostnames, public ports, and direct-IP paths that bypass Access. Validate JWTs in the origin when its exposure model requires defense in depth."
+			],
+			"routingAndDns": [
+				"Route the public hostname to the correct tunnel using the documented DNS setup. Keep full-zone and partial-CNAME setup procedures distinct.",
+				"Match the intended hostname to the intended origin service and use a non-proxying catch-all for unmatched ingress.",
+				"Avoid mixing path-dependent ingress with stronger policy assumptions without testing normalization and matching on the deployed cloudflared version."
+			],
+			"identityPolicy": [
+				"Start with a narrowly scoped group and required identity conditions, not a broad allow-everyone policy.",
+				"Set and test application session behavior and revocation expectations. Keep origin authorization for per-resource permissions.",
+				"For connector JWT validation, use the correct Access team and application audience. Never trust the mere presence of Cf-Access-Jwt-Assertion."
+			],
+			"failureModes": [
+				"Identity-provider or Access authentication failures prevent new sign-ins; cached session behavior depends on the configured policy and token lifetime.",
+				"Connector or outbound-network loss makes that path unavailable. Multiple connectors provide redundancy only if each can reach the required origin.",
+				"Origin DNS, TLS, or application failures can occur while the tunnel remains connected. Monitor the application path, not just connector status.",
+				"Replicas of one tunnel are not a substitute for health-aware application traffic steering. Load Balancing is a separate design and entitlement decision."
+			],
+			"tradeoffs": [
+				"Browser-based access avoids a client installation for this public web scenario, but creates a discoverable public application hostname.",
+				"Access and origin sessions introduce separate expiry, recovery, and support concerns.",
+				"Removing direct public ingress reduces bypass paths but makes tested connector redundancy and recovery important."
+			],
+			"diagramText": "Browser --HTTPS--> Cloudflare / Access --Tunnel--> cloudflared --verified origin connection--> Web application\nAccess <--> Identity provider\nBoundary 1: user identity and Access policy. Boundary 2: connector-to-origin reachability and TLS. Tunnel is transport, not an authorization decision.",
+			"validation": [
+				"Confirm an allowed user reaches the app and a user outside the policy cannot.",
+				"Confirm anonymous requests cannot reach the protected origin; test direct-IP and alternate-hostname bypass paths.",
+				"Test invalid/absent application JWT handling at the configured validation layer.",
+				"Stop one connector in an approved test and observe application availability; separately test an origin failure and recovery."
+			],
+			"rollback": [
+				"Keep an owner-approved, authenticated recovery path independent of the application being changed.",
+				"Revert the specific route or policy change rather than opening the origin or broadly bypassing Access.",
+				"Restore connector/origin health and retest allowed, denied, and bypass cases before restoring normal traffic."
+			]
+		}
+	},
+	{
+		"schemaVersion": 1,
+		"type": "implementation-guide",
+		"title": "Make D1 creation recoverable after a lost response",
+		"summary": "Commit an item and an actor-scoped idempotency receipt in one D1 batch. Recover the recorded result on a same-key retry without claiming exactly-once delivery or retrying arbitrary writes.",
+		"primaryFamily": "developer-platform",
+		"families": ["developer-platform"],
+		"products": ["d1", "workers"],
+		"outcomes": ["build-reliable-services"],
+		"applicability": {
+			"requires": [
+				"A TypeScript Worker with a generated Env type and a local D1 DB binding.",
+				"A trusted authentication layer that supplies the actor, bounded validated input, and a client key reused only for unchanged retries."
+			],
+			"excludes": [
+				"This repository example is not a complete HTTP handler or an authorization system.",
+				"It does not atomically coordinate email, external APIs, or a cache purge with a D1 transaction."
+			],
+			"dependencies": [
+				"Keep the database binding local during development; never use remote: true for this rehearsal.",
+				"Confirm Workers/D1 quotas, row and index costs, receipt retention, and backup requirements for the intended workload."
+			]
+		},
+		"sources": [
+			{ "url": "https://developers.cloudflare.com/d1/worker-api/d1-database/#batch", "title": "D1 batch transaction semantics" },
+			{ "url": "https://developers.cloudflare.com/d1/best-practices/retry-queries/", "title": "Retry only application-idempotent queries" },
+			{ "url": "https://developers.cloudflare.com/d1/best-practices/read-replication/", "title": "D1 sessions and first-primary" },
+			{
+				"url": "https://developers.cloudflare.com/workers/best-practices/workers-best-practices/",
+				"title": "Workers production best practices"
+			}
+		],
+		"evidence": "public-docs",
+		"maturity": "ga",
+		"modifiedAt": "2026-10-30",
+		"factVerifiedAt": "2026-10-30",
+		"reviewDueAt": "2027-01-30",
+		"body": {
+			"prerequisites": [
+				"Generate Env from a Wrangler configuration with a DB binding; the example uses Env['DB'] rather than a hand-written binding interface.",
+				"Authenticate before calling the repository. Bound streamed JSON bytes before buffering, then validate the key and value. Do not accept an actor supplied by the request body.",
+				"Use a fixed operation namespace and canonical payload shape. Decide receipt retention before launch."
+			],
+			"steps": [
+				"Apply the two-table schema locally. The unique actor/operation/key tuple is the durable concurrency boundary.",
+				"Compute the canonical payload digest and check the receipt using a first-primary session. A completed key with different data is a conflict.",
+				"Insert the item and receipt in one batch. A receipt uniqueness failure rolls back the item insert.",
+				"If the commit response is lost or a concurrent request wins, read the receipt and return its item ID only when the digest agrees. If no receipt exists, surface the error and let a bounded unchanged retry recover later.",
+				"Map the repository conflict to HTTP 409 and successful creation/replay to the documented response. Apply any required cache purge after both initial success and replay; a purge failure does not undo the commit."
+			],
+			"artifacts": [
+				{
+					"kind": "code",
+					"language": "sql",
+					"filename": "schema.sql",
+					"purpose": "A small independent example, not a migration for this catalog. Retain receipts with their items and include both in private recovery backups.",
+					"code": "CREATE TABLE Items (\n  id INTEGER PRIMARY KEY AUTOINCREMENT,\n  value TEXT NOT NULL\n);\nCREATE TABLE ItemReceipts (\n  actor TEXT NOT NULL,\n  operation TEXT NOT NULL,\n  key TEXT NOT NULL,\n  digest TEXT NOT NULL,\n  item_id INTEGER NOT NULL REFERENCES Items(id),\n  PRIMARY KEY (actor, operation, key)\n);"
+				},
+				{
+					"kind": "code",
+					"language": "typescript",
+					"filename": "repository.ts",
+					"purpose": "Durable creation only. Call after authentication and bounded validation; the caller owns HTTP errors, bounded retry policy, and any cache invalidation.",
+					"code": "export class IdempotencyConflict extends Error {}\n\nexport async function createItem(\n  db: Env['DB'], actor: string, key: string, value: string,\n): Promise<number> {\n  const session = db.withSession('first-primary');\n  const bytes = new TextEncoder().encode(JSON.stringify({ value }));\n  const hash = await crypto.subtle.digest('SHA-256', bytes);\n  const digest = Array.from(new Uint8Array(hash), b => b.toString(16).padStart(2, '0')).join('');\n  const operation = 'create-item:v1';\n  const receipt = () => session.prepare(\n    'SELECT digest, item_id FROM ItemReceipts WHERE actor = ? AND operation = ? AND key = ?',\n  ).bind(actor, operation, key).first<{ digest: string; item_id: number }>();\n  const recover = (row: { digest: string; item_id: number }) => {\n    if (row.digest !== digest) throw new IdempotencyConflict('Key already used for different data');\n    return row.item_id;\n  };\n  const prior = await receipt();\n  if (prior) return recover(prior);\n  try {\n    const [created] = await session.batch<{ id: number }>([\n      session.prepare('INSERT INTO Items (value) VALUES (?) RETURNING id').bind(value),\n      session.prepare(\n        'INSERT INTO ItemReceipts (actor, operation, key, digest, item_id) VALUES (?, ?, ?, ?, last_insert_rowid())',\n      ).bind(actor, operation, key, digest),\n    ]);\n    return created.results[0].id;\n  } catch (err) {\n    console.error(err);\n    const completed = await receipt();\n    if (completed) return recover(completed);\n    throw err;\n  }\n}"
+				},
+				{
+					"kind": "warning",
+					"text": "Do not log tokens, request bodies, or raw idempotency keys. Do not delete a receipt to make a conflicting retry succeed. External side effects require an additional design, such as a transactional outbox."
+				}
+			],
+			"validation": [
+				"Repeat the same actor/key/value: one item, one receipt, and the same ID.",
+				"Reuse the same actor/key with another value: conflict, with no extra item.",
+				"Run concurrent unchanged requests and simulate a response lost after commit; both must resolve to one committed item.",
+				"Force the receipt insert to fail and confirm the item insert rolls back.",
+				"Test streamed multibyte and misleading-length payloads at the HTTP boundary. Test cache-purge failures and replay purge attempts separately."
+			],
+			"rollback": [
+				"Roll back application code without dropping receipts or resetting identity sequences.",
+				"Keep the operation namespace and canonical payload stable across the compatibility window.",
+				"Restore from a private backup containing both items and receipts when recovery is needed. A public catalog export is not a recovery backup."
+			]
+		}
+	}
+]

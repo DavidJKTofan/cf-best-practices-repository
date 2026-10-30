@@ -4,11 +4,14 @@
 import sqlite3
 from pathlib import Path
 from urllib.parse import urlparse
+from catalog_integrity import verify_catalog
 
 ROOT = Path(__file__).resolve().parents[1]
 PATCHES = (
     "data/copyable-expressions.sql",
     "data/content-review-2026-10-29.sql",
+    "data/catalog-taxonomy.sql",
+    "data/phase5-products.sql",
 )
 TEXT_LIMITS = {
     "title": 500,
@@ -35,6 +38,7 @@ def require(condition, message):
 def verify(db):
     require(db.execute("PRAGMA integrity_check").fetchone()[0] == "ok", "SQLite integrity check failed")
     require(not db.execute("PRAGMA foreign_key_check").fetchall(), "Foreign-key violations")
+    verify_catalog(db)
     duplicates = db.execute(
         "SELECT LOWER(TRIM(title)) FROM BestPractices GROUP BY LOWER(TRIM(title)) HAVING COUNT(*) > 1"
     ).fetchall()

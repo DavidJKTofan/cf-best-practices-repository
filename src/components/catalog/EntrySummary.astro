@@ -1,0 +1,28 @@
+---
+import type { CatalogSummary } from '../../modules/catalog/v2-projection';
+import { TYPE_LABELS } from '../../content/presentation';
+interface Props {
+	entry: CatalogSummary;
+	headingLevel?: 'h2' | 'h3';
+}
+const { entry, headingLevel: Heading = 'h2' } = Astro.props;
+---
+
+<article class="entry-row" data-family={entry.primaryFamily ?? 'legacy'}>
+	<div>
+		<p class="eyebrow">
+			{entry.lifecycle.state !== 'active' && <strong>{entry.lifecycle.state} / </strong>}
+			{TYPE_LABELS[entry.type] ?? entry.type}
+			{entry.products.length > 0 && <span> / {entry.products.join(' + ')}</span>}
+		</p>
+		<Heading class="entry-title">
+			<a href={entry.canonicalPath}>{entry.title}</a>
+		</Heading>
+		<p>{entry.summary}</p>
+		<p class="entry-meta">
+			{entry.schemaVersion === 0
+				? 'Legacy import · Applicability and fact review not classified'
+				: `${entry.evidence === 'public-docs' ? 'Public documentation reviewed' : entry.evidence} · ${entry.factVerifiedAt ?? 'Fact-verification date not recorded'}`}
+		</p>
+	</div>
+</article>

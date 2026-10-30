@@ -2,7 +2,10 @@
 	"linkset": [
 		{
 			"anchor": "https://db.automatic-demo.com/api/",
-			"service-desc": [{ "href": "https://db.automatic-demo.com/openapi.json", "type": "application/vnd.oai.openapi+json" }],
+			"service-desc": [
+				{ "href": "https://db.automatic-demo.com/openapi.json", "type": "application/vnd.oai.openapi+json" },
+				{ "href": "https://db.automatic-demo.com/openapi-v2.json", "type": "application/vnd.oai.openapi+json" }
+			],
 			"service-doc": [{ "href": "https://db.automatic-demo.com/api-docs", "type": "text/html" }]
 		}
 	]

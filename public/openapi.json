@@ -2,13 +2,16 @@
 	"openapi": "3.1.0",
 	"info": {
 		"title": "Cloudflare L7 Best Practices — public read API",
-		"version": "1.1.0",
+		"version": "1.2.0",
 		"description": "Anonymous, read-only access to a personal educational repository, not official Cloudflare guidance. Validate sources, dates, and plan prerequisites. Search and AI answer retrieval are permitted; AI training is not. Writes require Cloudflare Access and are outside this public contract. GET endpoints also support HEAD and OPTIONS. Respect Retry-After on 429 responses."
 	},
 	"servers": [{ "url": "https://db.automatic-demo.com" }],
 	"externalDocs": { "url": "https://db.automatic-demo.com/api-docs" },
 	"security": [],
 	"paths": {
+		"/api/v2/entries": { "$ref": "./openapi-v2.json#/paths/~1api~1v2~1entries" },
+		"/api/v2/entries/{id}": { "$ref": "./openapi-v2.json#/paths/~1api~1v2~1entries~1{id}" },
+		"/api/v2/facets": { "$ref": "./openapi-v2.json#/paths/~1api~1v2~1facets" },
 		"/api/practices": {
 			"get": {
 				"operationId": "listPractices",
@@ -18,7 +21,7 @@
 					{
 						"name": "search",
 						"in": "query",
-						"description": "Trimmed literal substring of title, description, expression, configuration, prerequisites, or notes; truncated to 200 characters. LIKE wildcards are escaped.",
+						"description": "Literal substring of title, description, expression, configuration, prerequisites, or notes. NULs are removed, input is trimmed and truncated to 200 UTF-16 code units. ASCII case-insensitive; non-ASCII case is exact. Percent, underscore and backslash are literal characters, not wildcards.",
 						"schema": { "type": "string", "maxLength": 200 }
 					},
 					{ "name": "categoryId", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 2147483647 } },

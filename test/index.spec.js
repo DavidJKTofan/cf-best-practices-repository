@@ -79,12 +79,104 @@ describe('public read API', () => {
 		expect(body.data.map((p) => p.title)).toEqual(['Enable HTTP/3']);
 	});
 
-	it('treats LIKE wildcards in search literally', async () => {
+	it('treats wildcard characters in search literally', async () => {
 		const underscore = await (await call('/api/practices?search=rate_limit')).json();
 		expect(underscore.data.map((p) => p.title)).toEqual(['Use rate_limit rules']);
 
 		const percent = await (await call('/api/practices?search=%25')).json();
 		expect(percent.count).toBe(0);
+	});
+
+	it('accepts long ASCII, multibyte and wildcard-heavy literal searches without the D1 pattern limit', async () => {
+		for (const search of [
+			'x'.repeat(48),
+			'x'.repeat(49),
+			'界'.repeat(17),
+			'_'.repeat(25),
+			'😀'.repeat(100),
+			...['x', '界', '%', '_', '\\'].map((c) => c.repeat(200)),
+		]) {
+			const response = await call(`/api/practices?search=${encodeURIComponent(search)}`);
+			expect(response.status).toBe(200);
+			expect(response.headers.get('Cache-Control')).toContain('max-age=60');
+			expect(response.headers.get('Cache-Tag')).toBe('practices');
+			expect(await response.json()).toEqual({ success: true, data: [], count: 0 });
+		}
+	});
+
+	it('finds a complete long literal in each of the six legacy fields and still ANDs other filters', async () => {
+		const needle = `${'Abc'.repeat(25)}界%_\\`;
+		const ids = [];
+		const columns = ['title', 'description', 'expression', 'expressions_configuration_details', 'prerequisites', 'notes'];
+		for (const column of columns) {
+			const result = await env.DB.prepare(
+				`INSERT INTO BestPractices (title, description, expression, expressions_configuration_details, prerequisites, notes,
+				 domain, category_id, feature_id, recommendation_level, impact_level)
+				 VALUES (?, ?, ?, ?, ?, ?, 'Security', 1, 1, 'Recommended', 'High')`,
+			)
+				.bind(
+					...columns.map((c) =>
+						c === column ? `prefix ${needle} suffix` : c === 'title' || c === 'description' ? `Search fixture ${column}` : null,
+					),
+				)
+				.run();
+			ids.push(result.meta.last_row_id);
+		}
+		const path = `/api/practices?search=${encodeURIComponent(needle.replace(/[a-z]/g, (c) => c.toUpperCase()))}`;
+		const response = await call(`${path}&area=Security&categoryId=1&featureId=1&level=Recommended&impact=High`);
+		expect(response.status).toBe(200);
+		const body = await response.json();
+		expect(body.count).toBe(6);
+		expect(body.data.map((row) => row.practice_id).sort((a, b) => a - b)).toEqual(ids);
+		expect((await (await call(`${path}&area=Performance`)).json()).count).toBe(0);
+		expect((await (await call(`${path}x`)).json()).count).toBe(0); // Must not search only a short prefix.
+	});
+
+	it('retains legacy LIKE matching semantics for short input, including ASCII case, non-ASCII case and NULLs', async () => {
+		await env.DB.prepare(
+			`INSERT INTO BestPractices (title, description, domain, notes)
+			 VALUES ('Literal %_\\ ASCII É', 'Separate fields', 'General', 'Notes only')`,
+		).run();
+		const columns = ['title', 'description', 'expression', 'expressions_configuration_details', 'prerequisites', 'notes'];
+		for (const search of [
+			'rate_limit',
+			'RATE_LIMIT',
+			'ascii',
+			'É',
+			'é',
+			'%',
+			'_',
+			'\\',
+			'%_\\',
+			"' OR 1=1 --",
+			'Notes only',
+			'ÉSeparate',
+			'É\nSeparate',
+		]) {
+			const pattern = `%${search.replace(/[\\%_]/g, '\\$&')}%`;
+			const expected = await env.DB.prepare(
+				`SELECT practice_id FROM BestPractices WHERE ${columns.map((c) => `${c} LIKE ? ESCAPE '\\'`).join(' OR ')} ORDER BY practice_id`,
+			)
+				.bind(...columns.map(() => pattern))
+				.all();
+			const response = await call(`/api/practices?search=${encodeURIComponent(search)}`);
+			expect(response.status).toBe(200);
+			const body = await response.json();
+			expect(body.data.map((row) => row.practice_id).sort((a, b) => a - b)).toEqual(expected.results.map((row) => row.practice_id));
+		}
+	});
+
+	it('uses the existing normalized 200-code-unit search for both the cache key and SQL', async () => {
+		const needle = 'Ab'.repeat(100);
+		await env.DB.prepare("INSERT INTO BestPractices (title, description, domain) VALUES ('Bounded search fixture', ?, 'General')")
+			.bind(`prefix ${needle} suffix`)
+			.run();
+		const path = `/api/practices?search=${encodeURIComponent(`  ${needle}\0ignored suffix  `)}`;
+		const normalized = normalizeApiRequest(new Request(`${ORIGIN}${path}`));
+		expect(new URL(normalized.url).searchParams.get('search')).toBe(needle);
+		const response = await call(path);
+		expect(response.status).toBe(200);
+		expect((await response.json()).data.map((row) => row.title)).toEqual(['Bounded search fixture']);
 	});
 
 	it('serves reads from the cached PublicReads entrypoint with edge TTL and purge tags', async () => {
@@ -242,6 +334,30 @@ describe('schema', () => {
 describe('durable practice creation', () => {
 	const local = { ALLOW_LOCAL_WRITES: 'true' };
 	const path = '/dashboard/api/practices';
+
+	it('recovers a pre-refactor receipt with the original v1 operation and normalized-payload hashes', async () => {
+		// Fixed SHA-256 fixtures from the pre-Phase-1 namespace, normalization and key ordering.
+		const operationKey = 'ee87b52b9991c1554652b6b0a914c2c9fa65ccbedb741f224bc949d825021750';
+		const payloadHash = '95b9d1915a161f83df4710bdb270498aa51d5f976f7021384ee5f201d93213c2';
+		const { meta } = await env.DB.prepare(
+			"INSERT INTO BestPractices (title, description, domain) VALUES ('Legacy receipt fixture', 'Deploy the managed ruleset.', 'Security')",
+		).run();
+		const id = meta.last_row_id;
+		await env.DB.prepare('INSERT INTO PracticeCreations (operation_key, payload_hash, practice_id) VALUES (?, ?, ?)')
+			.bind(operationKey, payloadHash, id)
+			.run();
+		const practice = validatePractice({ ...VALID_PRACTICE, title: ' Legacy receipt fixture\0 ' });
+		expect(await createPractice(env.DB, practice, 'legacy-actor', 'legacy-client-retry-0001')).toBe(id);
+		expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM BestPractices WHERE title = 'Legacy receipt fixture'").first('n')).toBe(1);
+		expect(
+			await env.DB.prepare('SELECT operation_key, payload_hash, practice_id FROM PracticeCreations WHERE operation_key = ?')
+				.bind(operationKey)
+				.first(),
+		).toEqual({ operation_key: operationKey, payload_hash: payloadHash, practice_id: id });
+		await expect(
+			createPractice(env.DB, { ...practice, title: 'Changed retry' }, 'legacy-actor', 'legacy-client-retry-0001'),
+		).rejects.toThrow('Idempotency-Key was already used with different practice data');
+	});
 
 	it('requires a well-formed key', async () => {
 		for (const key of ['', 'short', 'a'.repeat(129), 'unsafe key with spaces']) {

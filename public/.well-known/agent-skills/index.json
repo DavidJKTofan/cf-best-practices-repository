@@ -4,9 +4,9 @@
 		{
 			"name": "read-practices",
 			"type": "skill-md",
-			"description": "Search and cite sourced Cloudflare L7 practices with prerequisites, configuration, and official references.",
+			"description": "Search and cite sourced Cloudflare recommendations, architectures, and implementation patterns.",
 			"url": "https://db.automatic-demo.com/.well-known/agent-skills/read-practices/SKILL.md",
-			"digest": "sha256:c2e8b58a93e3f7bb449354ea5459f04ef206ea83b1b9f49ce58b7ff689f15eb5"
+			"digest": "sha256:8d981f8d93c18b255173e846efc9278198bad282aeb7f7c0e322217e319f5019"
 		}
 	]
 }

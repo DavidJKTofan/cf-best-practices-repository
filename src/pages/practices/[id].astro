@@ -1,0 +1,249 @@
+---
+import { env } from 'cloudflare:workers';
+import FieldGuide from '../../layouts/FieldGuide.astro';
+import ReadingSections from '../../components/content/ReadingSections.astro';
+import EntrySummary from '../../components/catalog/EntrySummary.astro';
+import { getCatalogEntry, listCatalog } from '../../modules/catalog/v2-queries';
+import { readingSections, TYPE_LABELS } from '../../content/presentation';
+import { SITE_URL, modifiedDate, safeUrl } from '../../content-rendering';
+import { configurationSections } from '../../configuration-rendering';
+import { HttpError } from '../../http';
+import type { CatalogDetail, CatalogSummary } from '../../modules/catalog/v2-projection';
+const id = Number(Astro.params.id);
+const db = env.DB.withSession('first-primary');
+let entry: CatalogDetail | undefined;
+let status = 200;
+let related: CatalogSummary[] = [];
+if (!Number.isSafeInteger(id) || id < 1 || id > 2147483647) status = 404;
+else {
+	try {
+		entry = (await getCatalogEntry(db, new URL(`${SITE_URL}/api/v2/entries/${id}`))).data;
+		if (entry.primaryFamily)
+			related = (await listCatalog(db, new URL(`${SITE_URL}/api/v2/entries?family=${entry.primaryFamily}&pageSize=4`))).data
+				.filter((r) => r.practiceId !== id)
+				.slice(0, 3);
+	} catch (err) {
+		if (!(err instanceof HttpError && err.status === 404)) console.error(err);
+		status = err instanceof HttpError && err.status === 404 ? 404 : 503;
+	}
+}
+Astro.response.status = status;
+const path = `/practices/${id}`;
+const sections = entry?.schemaVersion === 1 ? readingSections(entry) : [];
+const updated = modifiedDate(entry?.modifiedAt ?? null);
+const sources = entry?.sources.filter((s) => safeUrl(s.url)) ?? [];
+const legacy = entry?.schemaVersion === 0 ? entry.body : null;
+const configurations = legacy ? configurationSections(legacy) : [];
+const hasNotes = Boolean(legacy?.notes?.trim());
+const title = status === 404 ? 'Guidance not found' : status === 503 ? 'Guidance temporarily unavailable' : entry!.title;
+---
+
+<FieldGuide
+	title={title}
+	description={entry?.summary}
+	canonical={path}
+	markdown={`${path}.md`}
+	noindex={status !== 200}
+	mainClass="reading-page"
+	schema={
+		entry && status === 200
+			? [
+					{
+						'@context': 'https://schema.org',
+						'@type': 'TechArticle',
+						'@id': `${SITE_URL}${path}`,
+						url: `${SITE_URL}${path}`,
+						headline: entry.title,
+						description: entry.summary,
+						inLanguage: 'en',
+						dateModified: updated,
+						citation: sources.map((s) => s.url),
+						version: entry.revisionId ?? undefined,
+						isPartOf: { '@type': 'WebSite', name: 'Cloudflare Field Guide', url: `${SITE_URL}/` },
+					},
+					{
+						'@context': 'https://schema.org',
+						'@type': 'BreadcrumbList',
+						itemListElement: [
+							{ '@type': 'ListItem', position: 1, name: 'Field guide', item: `${SITE_URL}/` },
+							{ '@type': 'ListItem', position: 2, name: entry.title, item: `${SITE_URL}${path}` },
+						],
+					},
+				]
+			: undefined
+	}
+>
+	<nav class="breadcrumbs" aria-label="Breadcrumb">
+		<a href="/">Field guide</a> /{' '}
+		{entry?.primaryFamily ? <a href={`/families/${entry.primaryFamily}`}>{entry.primaryFamily}</a> : <a href="/catalog">Browse all</a>} /{' '}
+		{id}
+	</nav>
+	{status !== 200 || !entry ? (
+		<section class="empty-state">
+			<h1>{title}</h1>
+			<p>
+				{status === 404 ? 'This ID has no current published guidance. Drafts and previews are never public.' : 'Please retry in a moment.'}
+			</p>
+			<a href="/catalog">Browse published guidance</a>
+		</section>
+	) : (
+		<>
+			<header class="page-heading reading-heading">
+				<p class="eyebrow">
+					{TYPE_LABELS[entry.type]} / No. {entry.practiceId}
+					{entry.revisionId && ` / Revision ${entry.revisionId}`}
+				</p>
+				<h1>{entry.title}</h1>
+				{entry.lifecycle.state !== 'active' && (
+					<aside class="empty-state" aria-label="Publication status">
+						<strong>{entry.lifecycle.state === 'superseded' ? 'Superseded guidance' : 'Deprecated guidance'}</strong>
+						<p>{entry.lifecycle.reason}</p>
+						{entry.lifecycle.supersededBy && <a href={`/practices/${entry.lifecycle.supersededBy}`}>Read the replacement guidance →</a>}
+					</aside>
+				)}
+				<p class="lede">{entry.schemaVersion === 0 ? entry.body.description : entry.summary}</p>
+				<p>
+					<a href={`${path}.md`}>Read as Markdown ↗</a>
+				</p>
+			</header>
+			<div class="reading-grid">
+				<aside class="contents">
+					<details class="contents-disclosure" open>
+						<summary>On this page</summary>
+						<nav aria-label="On this page">
+							{sections.map((s) => (
+								<a href={`#${s.id}`}>{s.title}</a>
+							))}
+							{legacy && (
+								<>
+									<a href="#legacy-context">Applicability</a>
+									{configurations.map((section) => (
+										<a href={`#${section.kind}`}>{section.heading}</a>
+									))}
+									{hasNotes && <a href="#notes">Implementation notes</a>}
+								</>
+							)}
+							<a href="#sources">Sources & freshness</a>
+							{related.length > 0 && <a href="#related">Related guidance</a>}
+						</nav>
+					</details>
+					<script is:inline type="module" src="/contents.js"></script>
+				</aside>
+				<article class="reading-body">
+					{legacy ? (
+						<>
+							<section id="legacy-context">
+								<h2>Applicability</h2>
+								<p class="entry-meta">
+									This imported entry has not been converted into a typed revision. Its recorded guidance is preserved; family, maturity,
+									and fact-verification metadata remain unknown.
+								</p>
+								<dl class="facts">
+									{[
+										['Domain', legacy.domain],
+										['Category', legacy.category_name],
+										['Feature', legacy.feature_name],
+										['Recommendation level', legacy.recommendation_level],
+										['Impact', legacy.impact_level],
+										['Difficulty', legacy.difficulty_level],
+									].map(([label, value]) => (
+										<div>
+											<dt>{label}</dt>
+											<dd>{value ?? 'Not rated'}</dd>
+										</div>
+									))}
+								</dl>
+								{legacy.prerequisites?.trim() && (
+									<>
+										<h3>Prerequisites</h3>
+										<p class="prose-text">{legacy.prerequisites}</p>
+									</>
+								)}
+							</section>
+							{configurations.map((section) => (
+								<section id={section.kind}>
+									<h2>{section.heading}</h2>
+									<div class="code-block is-wrapped" data-copy-kind={section.kind}>
+										<pre tabindex="0" aria-label={section.heading}><code>{section.text}</code></pre>
+									</div>
+								</section>
+							))}
+							{hasNotes && (
+								<section id="notes">
+									<h2>Implementation notes</h2>
+									<p class="prose-text">{legacy.notes}</p>
+								</section>
+							)}
+						</>
+					) : (
+						<>
+							<dl class="facts">
+								<div>
+									<dt>Products</dt>
+									<dd>{entry.products.join(' + ')}</dd>
+								</div>
+								<div>
+									<dt>Evidence</dt>
+									<dd>{entry.evidence}</dd>
+								</div>
+								<div>
+									<dt>Product maturity</dt>
+									<dd>{entry.maturity}</dd>
+								</div>
+							</dl>
+							<ReadingSections sections={sections} />
+						</>
+					)}
+					<section id="sources" class="reading-section">
+						<h2>Sources & freshness</h2>
+						{(sources.length > 0 || (legacy?.feature_url && safeUrl(legacy.feature_url))) && (
+							<ul>
+								{sources.map((source) => (
+									<li>
+										<a href={source.url} rel="noreferrer">
+											{source.title}
+										</a>
+									</li>
+								))}
+								{legacy?.feature_url && safeUrl(legacy.feature_url) && (
+									<li>
+										<a href={safeUrl(legacy.feature_url)!}>{legacy.feature_name ?? 'Feature'} documentation</a>
+									</li>
+								)}
+							</ul>
+						)}
+						<dl class="facts">
+							<div>
+								<dt>Editorial update</dt>
+								<dd>{updated ? <time datetime={updated}>{updated.slice(0, 10)}</time> : 'Not recorded'}</dd>
+							</div>
+							<div>
+								<dt>Fact verified</dt>
+								<dd>{entry.factVerifiedAt ?? 'Not recorded'}</dd>
+							</div>
+							<div>
+								<dt>Review due</dt>
+								<dd>{entry.reviewDueAt ?? 'Not recorded'}</dd>
+							</div>
+						</dl>
+						<p class="entry-meta">A documentation review is not evidence of deployment testing or of your account's entitlement.</p>
+					</section>
+					{related.length > 0 && (
+						<section id="related" class="reading-section">
+							<h2>Related guidance</h2>
+							<p>More published notes in the same family, ordered by title; not a required implementation sequence.</p>
+							{related.map((r) => (
+								<EntrySummary entry={r} headingLevel="h3" />
+							))}
+						</section>
+					)}
+					<p class="back-link">
+						<a href={entry.primaryFamily ? `/families/${entry.primaryFamily}` : '/catalog'}>
+							Continue browsing {entry.primaryFamily ? 'this family' : 'the field guide'} →
+						</a>
+					</p>
+				</article>
+			</div>
+		</>
+	)}
+</FieldGuide>

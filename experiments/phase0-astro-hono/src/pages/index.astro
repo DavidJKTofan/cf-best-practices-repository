@@ -1,0 +1,19 @@
+---
+import { env } from 'cloudflare:workers';
+import FieldGuide from '../layouts/FieldGuide.astro';
+import { listPreview } from '../catalog';
+const practices = await listPreview(env.DB);
+---
+<FieldGuide title="Engineering field guide">
+	<p class="eyebrow">Direction / compatibility experiment</p>
+	<h1>Find the pattern.<br />Understand the trade-off.</h1>
+	<p class="lede">A small rendering proof against the existing catalog. Three preview entries only; this is not the expanded catalog or its final design.</p>
+	<section aria-label="Preview practices">
+		{practices.map((practice) => <article>
+			<p class="eyebrow">{practice.domain} / {practice.practice_id}</p>
+			<h2><a href={`/practices/${practice.practice_id}`}>{practice.title}</a></h2>
+			<p>{practice.description}</p>
+		</article>)}
+	</section>
+	<p><a href="/index.md">Complete legacy Markdown catalog</a> · <a href="/api/practices">Legacy JSON</a></p>
+</FieldGuide>

@@ -1,0 +1,6 @@
+.astro/
+dist/
+.wrangler/
+worker-configuration.d.ts
+.dev.vars*
+.env*

@@ -1,0 +1,9 @@
+---
+import CatalogPage from '../components/catalog/CatalogPage.astro';
+import { env } from 'cloudflare:workers';
+import { loadListingPage } from '../modules/catalog/listing-page';
+const state = await loadListingPage(env.DB.withSession('first-primary'), Astro.url);
+Astro.response.status = state.status;
+---
+
+<CatalogPage state={state} />

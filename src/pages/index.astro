@@ -1,0 +1,111 @@
+---
+import { env } from 'cloudflare:workers';
+import FieldGuide from '../layouts/FieldGuide.astro';
+import EntrySummary from '../components/catalog/EntrySummary.astro';
+import { catalogFacets, listCatalog } from '../modules/catalog/v2-queries';
+import { SITE_URL, SITE_DESCRIPTION, SITE_NAME } from '../content-rendering';
+const db = env.DB.withSession('first-primary');
+const [page, facets, anchors] = await Promise.all([
+	listCatalog(db, new URL(`${SITE_URL}/api/v2/entries?pageSize=6&sort=newest`)),
+	catalogFacets(db, new URL(`${SITE_URL}/api/v2/facets`)),
+	// Stable old fragments need only IDs and labels, never the full-body catalog.
+	db.prepare('SELECT practice_id, title FROM BestPractices ORDER BY practice_id').all<{ practice_id: number; title: string }>(),
+]);
+---
+
+<FieldGuide
+	title="Cloudflare recommendations and patterns"
+	canonical="/"
+	markdown="/index.md"
+	description={SITE_DESCRIPTION}
+	schema={{
+		'@context': 'https://schema.org',
+		'@type': 'CollectionPage',
+		name: SITE_NAME,
+		url: `${SITE_URL}/`,
+		mainEntity: {
+			'@type': 'ItemList',
+			numberOfItems: page.total,
+			itemListElement: page.data.map((e, i) => ({
+				'@type': 'ListItem',
+				position: i + 1,
+				name: e.title,
+				url: `${SITE_URL}${e.canonicalPath}`,
+			})),
+		},
+	}}
+>
+	<section class="hero">
+		<h1>Cloudflare recommendations & patterns</h1>
+		<p class="lede">
+			Practical guidance with prerequisites, configuration examples, and official sources. Search the catalog or browse by topic.
+		</p>
+	</section>
+	<form class="home-search" method="get" action="/catalog" role="search">
+		<label for="find-pattern">Search guidance</label>
+		<div>
+			<input id="find-pattern" name="q" type="search" placeholder="Try Access, retries, or API security" />
+			<button type="submit">Search</button>
+		</div>
+	</form>
+	{(facets.data.families.length > 0 || facets.data.outcomes.length > 0) && (
+		<section class="journeys" aria-label="Choose a starting point">
+			{facets.data.families.length > 0 && (
+				<div>
+					<h2 class="section-label">Browse by family</h2>
+					<ul class="journey-links">
+						{facets.data.families.map((family) => (
+							<li data-family={family.slug}>
+								<a href={`/families/${family.slug}`}>
+									{family.label}
+									<span>
+										{family.count} <span aria-hidden="true">↗</span>
+									</span>
+								</a>
+							</li>
+						))}
+					</ul>
+				</div>
+			)}
+			{facets.data.outcomes.length > 0 && (
+				<div>
+					<h2 class="section-label">Browse by outcome</h2>
+					<ul class="journey-links">
+						{facets.data.outcomes.map((outcome) => (
+							<li>
+								<a href={`/catalog?outcome=${outcome.slug}`}>
+									{outcome.label}
+									<span aria-hidden="true">↗</span>
+								</a>
+							</li>
+						))}
+					</ul>
+				</div>
+			)}
+		</section>
+	)}
+	{page.data.length > 0 && (
+		<section class="starting-points" aria-labelledby="recent-heading">
+			<div class="section-heading">
+				<h2 class="section-label" id="recent-heading">
+					Recently updated
+				</h2>
+				<a href="/catalog">Browse all {page.total} entries →</a>
+			</div>
+			{page.data.map((entry) => (
+				<EntrySummary entry={entry} headingLevel="h3" />
+			))}
+		</section>
+	)}
+	<details class="legacy-index">
+		<summary>Legacy practice links</summary>
+		<p>Old #practice-ID links remain valid. Follow a title to its complete canonical page.</p>
+		<ul>
+			{anchors.results.map((entry) => (
+				<li id={`practice-${entry.practice_id}`}>
+					<a href={`/practices/${entry.practice_id}`}>{entry.title}</a>
+				</li>
+			))}
+		</ul>
+	</details>
+</FieldGuide>

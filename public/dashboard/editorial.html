@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="robots" content="noindex, nofollow" />
+		<meta name="color-scheme" content="light dark" />
+		<title>Editorial desk · Cloudflare Field Guide</title>
+		<link rel="stylesheet" href="/editorial.css" />
+		<script type="module" src="/editorial.js"></script>
+	</head>
+	<body>
+		<a class="skip" href="#draft">Skip to draft</a>
+		<header>
+			<a href="/">Cloudflare Field Guide</a><span>Private editorial desk / 04</span><a href="/dashboard">Legacy authoring ↗</a>
+		</header>
+		<main>
+			<div class="heading">
+				<p class="eyebrow">Working copy → independent review → publication</p>
+				<h1>Good guidance.<br />Deliberately published.</h1>
+				<p>
+					Drafts are private. Saving never changes public guidance. Publication requires reviewed sources and a publisher who has not
+					authored this entry.
+				</p>
+			</div>
+			<noscript
+				><p>
+					This authoring tool requires JavaScript. Public guidance and protected preview links do not. Use the documented JSON editorial API
+					with your authorized Access session.
+				</p></noscript
+			>
+			<p id="status" role="status" aria-live="polite">Checking editorial access…</p>
+			<div class="desk">
+				<aside>
+					<h2>On the desk</h2>
+					<p id="roles"></p>
+					<button id="refresh" type="button">Refresh queue</button>
+					<ol id="queue"></ol>
+					<button id="previous" type="button">Previous page</button><button id="next" type="button">Next page</button>
+					<p>Only 20 working copies per page. No drafts are stored in this browser.</p>
+				</aside>
+				<section id="draft" aria-labelledby="draft-heading">
+					<div class="toolbar">
+						<h2 id="draft-heading">Working copy</h2>
+						<span id="version">New / version 0</span>
+					</div>
+					<form id="open">
+						<label for="entry-id">Open entry by stable ID</label>
+						<div class="inline"><input id="entry-id" type="number" min="1" max="2147483647" required /><button>Open</button></div>
+					</form>
+					<div class="inline">
+						<label for="content-type">New content type</label
+						><select id="content-type">
+							<option value="recommendation">Recommendation</option>
+							<option value="rule-policy">Rule / policy</option>
+							<option value="reference-architecture">Reference architecture</option>
+							<option value="implementation-guide">Implementation guide</option>
+							<option value="operational-runbook">Operational runbook (guide variant)</option></select
+						><button type="button" id="new">New draft template</button>
+					</div>
+					<form id="editor">
+						<label for="envelope">Typed content envelope (JSON)</label>
+						<p id="envelope-hint">
+							Replace template placeholders with public-safe guidance. Product slugs must exist in the reviewed taxonomy. Sources,
+							applicability, body sections and separate fact/review dates are validated on the server. Complete request limit: 64 KiB.
+						</p>
+						<textarea id="envelope" rows="25" spellcheck="false" required aria-describedby="envelope-hint"></textarea>
+						<fieldset>
+							<legend>Publication lifecycle</legend>
+							<label for="lifecycle">Status</label
+							><select id="lifecycle">
+								<option value="active">Active</option>
+								<option value="deprecated">Deprecated</option>
+								<option value="superseded">Superseded</option></select
+							><label for="reason">Public reason (required unless active)</label><textarea id="reason" rows="2" maxlength="2000"></textarea
+							><label for="replacement">Replacement published ID (superseded only)</label
+							><input id="replacement" type="number" min="1" max="2147483647" />
+						</fieldset>
+						<button type="submit" id="save">Save private draft</button>
+					</form>
+					<nav class="actions" aria-label="Draft workflow">
+						<a id="preview" hidden target="_blank" rel="noopener noreferrer">Preview saved copy ↗</a
+						><a id="markdown" hidden target="_blank" rel="noopener noreferrer">Markdown ↗</a
+						><button id="submit" type="button">Submit for review</button
+						><button id="approve" type="button">Approve exact saved version</button
+						><button id="changes" type="button">Request changes</button><button id="publish" type="button">Publish reviewed version</button>
+					</nav>
+					<p>
+						Review and publish act on the saved version, not unsaved text. Any edit invalidates approval. Version conflicts never overwrite
+						a newer copy; reload and reconcile explicitly. If a response is lost, retry unchanged data.
+					</p>
+				</section>
+			</div>
+		</main>
+		<footer>
+			Unofficial educational project. Guidance is provided AS IS, without warranty. Validate public sources and product entitlement before
+			publication.
+		</footer>
+	</body>
+</html>

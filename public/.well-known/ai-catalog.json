@@ -1,6 +1,6 @@
 {
 	"specVersion": "1.0",
-	"host": { "displayName": "Cloudflare L7 Best Practices", "identifier": "https://db.automatic-demo.com/" },
+	"host": { "displayName": "Cloudflare Field Guide", "identifier": "https://db.automatic-demo.com/" },
 	"entries": [
 		{
 			"identifier": "urn:air:db.automatic-demo.com:api:practices",
@@ -22,6 +22,13 @@
 				"Read application security recommendations",
 				"Compare reliability practices and their implementation difficulty"
 			]
+		},
+		{
+			"identifier": "urn:air:db.automatic-demo.com:api:catalog-v2",
+			"displayName": "Published catalog summaries and typed details with HTML/Markdown citations",
+			"type": "application/vnd.oai.openapi+json",
+			"url": "https://db.automatic-demo.com/openapi-v2.json",
+			"representativeQueries": ["Browse published summaries in bounded pages", "Retrieve published entry details and taxonomy facets"]
 		}
 	]
 }

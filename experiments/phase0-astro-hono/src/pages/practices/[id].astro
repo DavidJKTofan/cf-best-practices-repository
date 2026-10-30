@@ -1,0 +1,29 @@
+---
+import { env } from 'cloudflare:workers';
+import FieldGuide from '../../layouts/FieldGuide.astro';
+import { getPractice } from '../../catalog';
+const practice = await getPractice(env.DB, Astro.params.id);
+if (!practice) Astro.response.status = 404;
+const source = practice?.source_reference;
+let safeSource: string | undefined;
+try { if (source && ['http:', 'https:'].includes(new URL(source).protocol)) safeSource = new URL(source).href; } catch { /* Unsafe legacy sources are not active links. */ }
+---
+<FieldGuide title={practice?.title ?? 'Practice not found'}>
+	{practice ? <>
+		<p class="eyebrow">{practice.domain} / {practice.feature_name ?? 'General'} / {practice.practice_id}</p>
+		<h1>{practice.title}</h1>
+		<p class="lede">{practice.description}</p>
+		<dl>
+			<dt>Category</dt><dd>{practice.category_name ?? 'Not specified'}</dd>
+			<dt>Recommendation</dt><dd>{practice.recommendation_level ?? 'Not specified'}</dd>
+			<dt>Impact / effort</dt><dd>{practice.impact_level ?? 'Not specified'} / {practice.difficulty_level ?? 'Not specified'}</dd>
+			<dt>Recorded update</dt><dd>{practice.updated_at ?? 'Unknown'} (not a new fact-verification date)</dd>
+		</dl>
+		{practice.prerequisites && <section><h2>Prerequisites</h2><p class="prose">{practice.prerequisites}</p></section>}
+		{practice.expression && <section><h2>Example expression</h2><pre><code>{practice.expression}</code></pre></section>}
+		{practice.expressions_configuration_details && <section><h2>Configuration guidance</h2><pre><code>{practice.expressions_configuration_details}</code></pre></section>}
+		{practice.notes && <section><h2>Notes and limitations</h2><p class="prose">{practice.notes}</p></section>}
+		{safeSource && <p><a href={safeSource}>Official source</a></p>}
+		<p><a href={`/practices/${practice.practice_id}.md`}>Read Markdown</a></p>
+	</> : <><h1>Practice not found</h1><p><a href="/">Return to the preview</a></p></>}
+</FieldGuide>

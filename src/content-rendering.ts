@@ -4,9 +4,9 @@ import { configurationHtml, configurationMarkdown } from './configuration-render
 export { escapeHtml } from './html-escaping';
 
 export const SITE_URL = 'https://db.automatic-demo.com';
-export const SITE_NAME = 'Cloudflare L7 Best Practices';
+export const SITE_NAME = 'Cloudflare Field Guide';
 export const SITE_DESCRIPTION =
-	'Sourced security, performance, and reliability best practices for Cloudflare application (Layer 7) services, with prerequisites and configuration examples.';
+	'Unofficial, sourced recommendations and implementation patterns for the Cloudflare platform. Understand the prerequisites, failure modes, and trade-offs before deploying.';
 export const CONTENT_SIGNAL = 'search=yes, ai-input=yes, ai-train=no';
 export const DISCLAIMER =
 	'A personal educational project, not official Cloudflare guidance. Validate recommendations against the linked documentation and your plan entitlements. Examples and thresholds must be adapted and observed before enforcement. Content is provided as is, without warranty.';
@@ -57,7 +57,7 @@ export function practiceMarkdown(p: Practice): string {
 }
 
 export function collectionMarkdown(practices: Practice[]): string {
-	return `# ${SITE_NAME}\n\n${SITE_DESCRIPTION}\n\n${DISCLAIMER}\n\n${practices.length} practices. Cite the canonical practice URLs and verify the official sources before applying advice.\n\n## Machine-readable access\n\n- [Agent index](${SITE_URL}/llms.txt)\n- [JSON API](${SITE_URL}/api/practices)\n- [API documentation](${SITE_URL}/api-docs)\n- [OpenAPI](${SITE_URL}/openapi.json)\n\n---\n\n${practices.map(practiceMarkdown).join('\n---\n\n')}`;
+	return `# ${SITE_NAME}\n\n${SITE_DESCRIPTION}\n\n${DISCLAIMER}\n\n${practices.length} practices. Cite the canonical practice URLs and verify the official sources before applying advice.\n\n## Machine-readable access\n\n- [Agent index](${SITE_URL}/llms.txt)\n- [JSON API](${SITE_URL}/api/practices)\n- [Paginated published summaries](${SITE_URL}/api/v2/entries): title/summary search and selective JSON detail retrieval; this Markdown export remains the legacy catalog\n- [API documentation](${SITE_URL}/api-docs)\n- [OpenAPI](${SITE_URL}/openapi.json)\n\n---\n\n${practices.map(practiceMarkdown).join('\n---\n\n')}`;
 }
 
 export function homeRows(practices: Practice[]): string {

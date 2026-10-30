@@ -1,0 +1,20 @@
+---
+import '../styles/field-guide.css';
+interface Props { title: string }
+const { title } = Astro.props;
+---
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width" />
+		<title>{title} — catalog compatibility proof</title>
+		<meta name="robots" content="noindex" />
+	</head>
+	<body>
+		<a class="skip" href="#content">Skip to content</a>
+		<header><a href="/">CF / FIELD NOTES</a><span>PHASE 0 · LOCAL PROOF</span></header>
+		<main id="content"><slot /></main>
+		<footer>Unofficial educational project. Provided AS IS, without warranty. See the repository README disclaimer. Not production guidance.</footer>
+	</body>
+</html>

@@ -58,7 +58,7 @@
 						</li>
 					</ul>
 					<p>
-						Responses are <code>{"success": true, "data": [...], "count": 123}</code>. The count reflects the returned records. There is no
+						v1 responses are <code>{"success": true, "data": [...], "count": 123}</code>. The count reflects the returned records. v1 has no
 						pagination.
 					</p>
 					<p>
@@ -70,19 +70,67 @@
 				<section>
 					<h2>Filters</h2>
 					<p>
-						<code>/api/practices</code> accepts <code>search</code> (literal substring, up to 200 characters), <code>categoryId</code>,
-						<code>featureId</code>, <code>area</code> (Security, Performance, Reliability, General), <code>level</code> (Mandatory,
-						Recommended, Optional, Situational), and <code>impact</code> (High, Medium, Low). Filters combine with AND. Unknown IDs return
-						no records; invalid filter values are ignored.
+						<code>/api/practices</code> accepts <code>search</code> (literal substring, ASCII case-insensitive, up to 200 UTF-16 code
+						units), <code>categoryId</code>, <code>featureId</code>, <code>area</code> (Security, Performance, Reliability, General),
+						<code>level</code> (Mandatory, Recommended, Optional, Situational), and <code>impact</code> (High, Medium, Low). Filters combine
+						with AND. Unknown IDs return no records; invalid filter values are ignored.
+					</p>
+					<p>
+						Search removes NULs and trims input before truncation. Non-ASCII case is exact; percent, underscore and backslash are literal
+						characters, not wildcards.
 					</p>
 					<pre tabindex="0"><code>curl 'https://db.automatic-demo.com/api/practices?search=WAF&amp;area=Security'
 curl -H 'Accept: text/markdown' https://db.automatic-demo.com/</code></pre>
 				</section>
 				<section>
+					<h2>Versioned catalog reads</h2>
+					<ul>
+						<li>
+							<a href="/api/v2/entries"><code>GET /api/v2/entries</code></a> — published summaries without bodies or sources.
+						</li>
+						<li><code>GET /api/v2/entries/{id}</code> — one complete published JSON detail; unpublished IDs return 404.</li>
+						<li>
+							<a href="/api/v2/facets"><code>GET /api/v2/facets</code></a> — populated type/family/product/outcome counts.
+						</li>
+					</ul>
+					<p>
+						AND filters are <code>q</code> (literal title/summary substring, ASCII case-insensitive, up to 200 Unicode code points),
+						canonical <code>family</code>, <code>product</code>, <code>outcome</code> slugs, and <code>type</code>. This is not full-body or
+						relevance-ranked search. Facets apply all filters together; empty/draft-only taxonomy is absent.
+					</p>
+					<p>
+						Listings return <code>{success, data, count, total, page, pageSize, pages, query, links}</code>. Default page size is 20
+						(maximum 50); page starts at 1 (maximum 10000). Invalid/zero page values use defaults; positive values above bounds are clamped.
+						<code>links</code> contains relative <code>self</code>, <code>next</code>, and <code>previous</code> URLs. Out-of-range pages
+						are empty with an accurate total; next stops at page 10000. Sort by <code>title</code> (default) or <code>newest</code>, then
+						numeric ID ascending. Pages can shift between requests after a write.
+					</p>
+					<p>
+						Unknown/default parameters are removed before caching; first duplicate wins. Invalid filters are ignored; unknown valid slugs
+						match nothing. Legacy imports use <code>schemaVersion: 0</code>, <code>type: legacy-practice</code>, and an unchanged v1 body,
+						without invented taxonomy or fact-verification dates. Typed content uses <code>schemaVersion: 1</code> and a published revision.
+						Operational runbooks remain <code>type: implementation-guide</code>, with <code>body.variant: operational-runbook</code> on
+						detail reads. They separate symptoms, read-only diagnosis, approved changes, recovery, success criteria and rollback. There is
+						no separate runbook type filter; instructions are not authorization to make changes. Use <code>canonicalPath</code> for HTML
+						citations and <code>detailPath</code> for JSON. Published native entries also support Markdown negotiation and explicit
+						<code>.md</code> URLs. Full exports stream all current published entries; v1 remains legacy-only. Browse
+						<a href="/catalog">URL-based search</a> and populated <code>/families/{slug}</code> hubs without JavaScript; append
+						<code>.md</code> to either listing path for the same effective result page. No query flag exposes drafts, and there are no v2
+						write routes. See the <a href="/openapi-v2.json">v2 schema</a> or <a href="/api-docs.md">complete Markdown contract</a>.
+					</p>
+					<p>
+						Summaries and details include <code>lifecycle</code>: <code>state</code> is <code>active</code>, <code>deprecated</code>, or
+						<code>superseded</code>. Retired guidance remains readable at its stable URL with a public <code>reason</code>;
+						<code>supersededBy</code> identifies its replacement. Check the replacement's current status and applicability before use, and
+						do not present retired examples as current recommendations. Active status alone is not proof of freshness or entitlement.
+					</p>
+				</section>
+				<section>
 					<h2>Caching, errors, and authentication</h2>
 					<p>
 						GET, HEAD, and OPTIONS are supported for public reads. Cross-origin reads are allowed. Practice responses may be cached by
-						clients for 60 seconds; taxonomy responses for 300 seconds. The edge cache is invalidated after dashboard writes.
+						clients for 60 seconds; v1 taxonomy responses for 300 seconds. v2 facets share the 60-second content TTL and practices purge
+						tag. Dashboard writes attempt a shared purge; browser caches and immediate global visibility are not guaranteed.
 					</p>
 					<p>
 						Errors use appropriate HTTP status codes. JSON API errors return <code>{"success": false, "error": "..."}</code>. A
@@ -91,7 +139,9 @@ curl -H 'Accept: text/markdown' https://db.automatic-demo.com/</code></pre>
 					</p>
 					<p>
 						Public reads need no authentication. Writes exist only under the Access-protected dashboard; see
-						<a href="/auth.md">authentication guidance</a>.
+						<a href="/auth.md">authentication guidance</a>. The local, not-yet-deployed typed workflow has a separate
+						<a href="/openapi-editorial.json">protected editorial schema</a> and requires private role grants in addition to login. It is
+						not part of the public read tools.
 					</p>
 				</section>
 				<section>

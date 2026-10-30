@@ -19,11 +19,15 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
-          node-version: '22'
+          node-version: '22.23.4'
           cache: npm
       - run: npm ci
       - run: npm test -- --run
       - run: npm run typecheck
       - run: npm run content:check
+      - run: npm run release:check
       - run: npx wrangler types --check
-      - run: npx wrangler deploy --dry-run
+      - run: npm run frontend:check
+      - run: npm run build
+      - run: npm run frontend:test
+      - run: npm run deploy:check

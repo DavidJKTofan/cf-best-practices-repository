@@ -1,0 +1,311 @@
+{
+	"openapi": "3.1.0",
+	"info": {
+		"title": "Cloudflare Field Guide — protected editorial API",
+		"version": "1.0.0",
+		"description": "Local Phase 4 implementation; not deployed. Every route requires a verified Cloudflare Access identity and explicit private EditorialRoles grants. JSON mutations are same-origin only, bounded to 64 KiB, and durably idempotent. No public read API writes or self-service role grants. Role provisioning and live Access policy require owner approval."
+	},
+	"servers": [{ "url": "/" }],
+	"security": [{ "AccessAssertion": [] }],
+	"paths": {
+		"/dashboard/api/catalog": {
+			"get": {
+				"operationId": "listEditorialDrafts",
+				"summary": "List up to 20 private working-copy summaries; any editorial role",
+				"parameters": [{ "name": "page", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 10000, "default": 1 } }],
+				"responses": {
+					"200": {
+						"description": "success, roles and data (practiceId, version, status, updatedAt, title, type); empty page ends traversal. HEAD also supported."
+					},
+					"default": { "$ref": "#/components/responses/Error" }
+				}
+			},
+			"post": {
+				"operationId": "createEditorialDraft",
+				"summary": "Reserve a native ID and save a typed private draft; editor",
+				"parameters": [{ "$ref": "#/components/parameters/Key" }],
+				"requestBody": { "$ref": "#/components/requestBodies/Draft" },
+				"responses": { "201": { "$ref": "#/components/responses/Mutation" }, "default": { "$ref": "#/components/responses/Error" } }
+			}
+		},
+		"/dashboard/api/catalog/{id}/draft": {
+			"parameters": [{ "$ref": "#/components/parameters/Id" }],
+			"get": {
+				"operationId": "getEditorialDraft",
+				"summary": "Get validated working content and lifecycle; any editorial role",
+				"responses": {
+					"200": {
+						"description": "success, roles, data: practiceId, version, status, baseRevisionId, updatedAt, content and lifecycle. HEAD also supported."
+					},
+					"default": { "$ref": "#/components/responses/Error" }
+				}
+			},
+			"put": {
+				"operationId": "saveEditorialDraft",
+				"summary": "Save exact expected version and invalidate review; editor",
+				"description": "Version 0 starts a working copy for a native published entry without one. Legacy conversion is blocked. All contributors are retained and cannot review or publish this entry.",
+				"parameters": [{ "$ref": "#/components/parameters/Key" }],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"allOf": [
+									{ "$ref": "#/components/schemas/Draft" },
+									{ "required": ["expectedVersion"], "properties": { "expectedVersion": { "$ref": "#/components/schemas/Version" } } }
+								],
+								"unevaluatedProperties": false
+							}
+						}
+					}
+				},
+				"responses": { "200": { "$ref": "#/components/responses/Mutation" }, "default": { "$ref": "#/components/responses/Error" } }
+			}
+		},
+		"/dashboard/api/catalog/{id}/preview": {
+			"parameters": [{ "$ref": "#/components/parameters/Id" }],
+			"get": {
+				"operationId": "previewEditorialDraft",
+				"summary": "Read saved draft as HTML or Markdown; any editorial role",
+				"parameters": [{ "name": "format", "in": "query", "schema": { "enum": ["markdown"] } }],
+				"responses": {
+					"200": {
+						"description": "PRIVATE PREVIEW banner; shared typed sections or Markdown renderer. No scripts, public indexing, caching or CORS. HEAD also supported.",
+						"content": { "text/html": { "schema": { "type": "string" } }, "text/markdown": { "schema": { "type": "string" } } }
+					},
+					"default": { "$ref": "#/components/responses/Error" }
+				}
+			}
+		},
+		"/dashboard/api/catalog/{id}/submit": {
+			"parameters": [{ "$ref": "#/components/parameters/Id" }],
+			"post": {
+				"operationId": "submitEditorialReview",
+				"summary": "Move draft to independent review; editor",
+				"description": "Requires recorded evidence, fact/editorial dates no later than today and a future review-due date. Schema or link success is not factual review.",
+				"parameters": [{ "$ref": "#/components/parameters/Key" }],
+				"requestBody": { "$ref": "#/components/requestBodies/Version" },
+				"responses": { "200": { "$ref": "#/components/responses/Mutation" }, "default": { "$ref": "#/components/responses/Error" } }
+			}
+		},
+		"/dashboard/api/catalog/{id}/review": {
+			"parameters": [{ "$ref": "#/components/parameters/Id" }],
+			"post": {
+				"operationId": "reviewEditorialDraft",
+				"summary": "Approve exact saved version or request changes; non-contributing reviewer",
+				"parameters": [{ "$ref": "#/components/parameters/Key" }],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"additionalProperties": false,
+								"required": ["expectedVersion", "decision"],
+								"properties": {
+									"expectedVersion": { "$ref": "#/components/schemas/Version" },
+									"decision": { "enum": ["approve", "request-changes"] }
+								}
+							}
+						}
+					}
+				},
+				"responses": { "200": { "$ref": "#/components/responses/Mutation" }, "default": { "$ref": "#/components/responses/Error" } }
+			}
+		},
+		"/dashboard/api/catalog/{id}/publish": {
+			"parameters": [{ "$ref": "#/components/parameters/Id" }],
+			"post": {
+				"operationId": "publishEditorialRevision",
+				"summary": "Atomically freeze reviewed content and switch public pointer; non-contributing publisher",
+				"description": "Reviewer must still hold their grant; publisher may be that reviewer. Requires matching base public revision. Publication, sources, taxonomy, pointer, workflow and receipt commit together. All public representations use the practices tag; initial success and replays attempt cache-owning purge RPC. Browser cache/edge invalidation is not guaranteed by a local success.",
+				"parameters": [{ "$ref": "#/components/parameters/Key" }],
+				"requestBody": { "$ref": "#/components/requestBodies/Version" },
+				"responses": { "200": { "$ref": "#/components/responses/Mutation" }, "default": { "$ref": "#/components/responses/Error" } }
+			}
+		},
+		"/dashboard/api/catalog/{id}/rebase": {
+			"parameters": [{ "$ref": "#/components/parameters/Id" }],
+			"post": {
+				"operationId": "rebaseEditorialDraft",
+				"summary": "Explicitly acknowledge a reconciled current public revision; editor",
+				"description": "Never merges content automatically. Requires the exact current published pointer (or null); invalidates approval, increments version and returns to draft. Reconcile content against current public guidance before requesting rebase and review.",
+				"parameters": [{ "$ref": "#/components/parameters/Key" }],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"additionalProperties": false,
+								"required": ["expectedVersion", "expectedPublishedRevisionId"],
+								"properties": {
+									"expectedVersion": { "$ref": "#/components/schemas/Version" },
+									"expectedPublishedRevisionId": { "type": ["integer", "null"], "minimum": 1 }
+								}
+							}
+						}
+					}
+				},
+				"responses": { "200": { "$ref": "#/components/responses/Mutation" }, "default": { "$ref": "#/components/responses/Error" } }
+			}
+		},
+		"/dashboard/api/catalog/{id}/history": {
+			"parameters": [{ "$ref": "#/components/parameters/Id" }],
+			"get": {
+				"operationId": "getEditorialHistory",
+				"summary": "Read publication history metadata; any editorial role",
+				"parameters": [{ "name": "before", "in": "query", "schema": { "type": "integer", "minimum": 1 } }],
+				"responses": {
+					"200": {
+						"description": "success, data (up to 50 revisionId/title/publishedAt records), nextBeforeRevisionId (null at end). Pass cursor as before. No draft bodies, reviewers or receipts. HEAD also supported."
+					},
+					"default": { "$ref": "#/components/responses/Error" }
+				}
+			}
+		}
+	},
+	"components": {
+		"securitySchemes": {
+			"AccessAssertion": {
+				"type": "apiKey",
+				"in": "header",
+				"name": "Cf-Access-Jwt-Assertion",
+				"description": "Access-issued JWT, cryptographically checked for issuer/audience/expiry. Application roles are private database grants keyed by the verified stable actor, never email, caller role headers or arbitrary JWT claims."
+			}
+		},
+		"parameters": {
+			"Id": { "name": "id", "in": "path", "required": true, "schema": { "type": "integer", "minimum": 1, "maximum": 2147483647 } },
+			"Key": {
+				"name": "Idempotency-Key",
+				"in": "header",
+				"required": true,
+				"schema": { "type": "string", "pattern": "^[A-Za-z0-9_-]{16,128}$" },
+				"description": "Random UUID recommended. One actor/key namespace across all editorial commands. Reuse exact command, target, expectedVersion and payload on uncertain retries; different data returns 409. Retain receipts in private backups."
+			}
+		},
+		"requestBodies": {
+			"Draft": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateDraft" } } } },
+			"Version": {
+				"required": true,
+				"content": {
+					"application/json": {
+						"schema": {
+							"type": "object",
+							"additionalProperties": false,
+							"required": ["expectedVersion"],
+							"properties": { "expectedVersion": { "$ref": "#/components/schemas/Version" } }
+						}
+					}
+				}
+			}
+		},
+		"responses": {
+			"Mutation": {
+				"description": "Durable original result on initial success/replay. Every successful command increments draft version; revisionId is non-null for publication only. purge=true means publication needs purge, not proof of live invalidation. All responses private/no-store, noindex; no CORS.",
+				"content": {
+					"application/json": {
+						"schema": {
+							"type": "object",
+							"required": ["success", "data"],
+							"properties": {
+								"success": { "const": true },
+								"data": {
+									"type": "object",
+									"required": ["practiceId", "version", "revisionId", "purge"],
+									"properties": {
+										"practiceId": { "type": "integer" },
+										"version": { "type": "integer" },
+										"revisionId": { "type": ["integer", "null"] },
+										"purge": { "type": "boolean" }
+									}
+								}
+							}
+						}
+					}
+				}
+			},
+			"Error": {
+				"description": "400 invalid content/key/taxonomy/dates; 401 missing identity; 403 invalid identity/role/origin; 404 missing route/draft; 405 wrong method; 409 version/workflow/base/authorship/idempotency conflict; 413 streamed bytes exceed 64 KiB; 415 not JSON; 5xx unavailable. No-store and no public CORS."
+			}
+		},
+		"schemas": {
+			"Version": { "type": "integer", "minimum": 0, "maximum": 2147483646 },
+			"CreateDraft": { "allOf": [{ "$ref": "#/components/schemas/Draft" }], "unevaluatedProperties": false },
+			"Draft": {
+				"type": "object",
+				"required": ["content", "lifecycle"],
+				"properties": {
+					"content": { "$ref": "#/components/schemas/Content" },
+					"lifecycle": { "$ref": "./openapi-v2.json#/components/schemas/Lifecycle" }
+				}
+			},
+			"Content": {
+				"type": "object",
+				"additionalProperties": false,
+				"required": [
+					"schemaVersion",
+					"type",
+					"title",
+					"summary",
+					"primaryFamily",
+					"families",
+					"products",
+					"outcomes",
+					"applicability",
+					"sources",
+					"evidence",
+					"maturity",
+					"modifiedAt",
+					"factVerifiedAt",
+					"reviewDueAt",
+					"body"
+				],
+				"properties": {
+					"schemaVersion": { "const": 1 },
+					"type": { "enum": ["recommendation", "rule-policy", "reference-architecture", "implementation-guide"] },
+					"title": { "type": "string", "minLength": 1, "maxLength": 500 },
+					"summary": { "type": "string", "minLength": 1, "maxLength": 500 },
+					"primaryFamily": { "$ref": "./openapi-v2.json#/components/schemas/Slug" },
+					"families": { "$ref": "./openapi-v2.json#/components/schemas/Slugs" },
+					"products": { "$ref": "./openapi-v2.json#/components/schemas/Slugs" },
+					"outcomes": { "$ref": "./openapi-v2.json#/components/schemas/Slugs" },
+					"applicability": { "$ref": "./openapi-v2.json#/components/schemas/Applicability" },
+					"sources": {
+						"type": "array",
+						"minItems": 1,
+						"maxItems": 16,
+						"items": { "$ref": "./openapi-v2.json#/components/schemas/Source" }
+					},
+					"evidence": { "enum": ["unreviewed", "public-docs", "lab-tested"] },
+					"maturity": { "enum": ["unknown", "ga", "beta", "early-access", "announcement-only"] },
+					"modifiedAt": { "type": ["string", "null"], "format": "date" },
+					"factVerifiedAt": { "type": ["string", "null"], "format": "date" },
+					"reviewDueAt": { "type": ["string", "null"], "format": "date" },
+					"body": { "type": "object" }
+				},
+				"oneOf": [
+					{
+						"properties": {
+							"type": { "const": "recommendation" },
+							"body": { "$ref": "./openapi-v2.json#/components/schemas/RecommendationBody" }
+						}
+					},
+					{ "properties": { "type": { "const": "rule-policy" }, "body": { "$ref": "./openapi-v2.json#/components/schemas/RuleBody" } } },
+					{
+						"properties": {
+							"type": { "const": "reference-architecture" },
+							"body": { "$ref": "./openapi-v2.json#/components/schemas/ArchitectureBody" }
+						}
+					},
+					{
+						"properties": {
+							"type": { "const": "implementation-guide" },
+							"body": { "$ref": "./openapi-v2.json#/components/schemas/GuideBody" }
+						}
+					}
+				]
+			}
+		}
+	}
+}

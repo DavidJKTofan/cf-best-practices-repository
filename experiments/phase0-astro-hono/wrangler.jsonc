@@ -1,0 +1,48 @@
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "cf-catalog-phase0-proof",
+	"main": "./src/worker.ts",
+	// Newest date supported by the workerd bundled with pinned Wrangler 4.151.0.
+	"compatibility_date": "2026-10-19",
+	"compatibility_flags": ["nodejs_compat"],
+	"upload_source_maps": true,
+	"workers_dev": false,
+	"preview_urls": false,
+	"assets": {
+		"binding": "ASSETS",
+		"run_worker_first": [
+			"/",
+			"/index.md",
+			"/practices/*",
+			"/sitemap.xml",
+			"/llms.txt",
+			"/llms-full.txt",
+			"/api-docs",
+			"/api/*",
+			"/dashboard/api/*",
+		],
+	},
+	"exports": {
+		"default": { "type": "worker", "cache": { "enabled": false } },
+		"PublicReads": { "type": "worker", "cache": { "enabled": true } },
+	},
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "phase0-local-only",
+			"database_id": "00000000-0000-0000-0000-000000000000",
+			"migrations_dir": "../../migrations",
+		},
+	],
+	"vars": {
+		"ACCESS_TEAM_DOMAIN": "https://example.cloudflareaccess.com",
+		"ACCESS_AUD": "phase0-not-a-live-access-application",
+	},
+	"ratelimits": [{ "name": "MY_RATE_LIMITER", "namespace_id": "1001", "simple": { "limit": 1500, "period": 60 } }],
+	"observability": {
+		"enabled": true,
+		"logs": { "enabled": true, "invocation_logs": true },
+		"traces": { "enabled": true },
+		"issues": { "enabled": true },
+	},
+}

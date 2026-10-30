@@ -1,0 +1,55 @@
+---
+import type { ReadingSection } from '../../content/presentation';
+interface Props {
+	sections: ReadingSection[];
+}
+const { sections } = Astro.props;
+---
+
+{sections.map((section) => (
+	<section class="reading-section" id={section.id}>
+		<h2>{section.title}</h2>
+		{section.paragraphs?.map((p) => (
+			<p class="prose-text">{p}</p>
+		))}
+		{section.items &&
+			(section.ordered ? (
+				<ol>
+					{section.items.map((text) => (
+						<li>{text}</li>
+					))}
+				</ol>
+			) : (
+				<ul>
+					{section.items.map((text) => (
+						<li>{text}</li>
+					))}
+				</ul>
+			))}
+		{section.diagram && (
+			<figure class="topology">
+				<p class="eyebrow">Topology / text equivalent</p>
+				<p class="diagram-text">{section.diagram}</p>
+				<figcaption>This text describes the traffic path and trust boundaries; no diagram or JavaScript is required.</figcaption>
+			</figure>
+		)}
+		{section.blocks?.map((block) =>
+			block.kind === 'code' ? (
+				<div class="artifact">
+					<h3>
+						{block.filename} <span class="code-language">{block.language}</span>
+					</h3>
+					<p>{block.purpose}</p>
+					<div class="code-block" data-copy-kind={section.id === 'expression' ? 'expression' : 'configuration'}>
+						<pre tabindex="0" aria-label={block.filename}><code>{block.code}</code></pre>
+					</div>
+				</div>
+			) : (
+				<p class:list={['prose-text', { warning: block.kind === 'warning' }]}>
+					{block.kind === 'warning' && <strong>Note: </strong>}
+					{block.text}
+				</p>
+			),
+		)}
+	</section>
+))}

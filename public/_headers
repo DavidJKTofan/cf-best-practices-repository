@@ -16,6 +16,7 @@
 
 /dashboard*
   X-Robots-Tag: noindex, nofollow
+  Cache-Control: private, no-store
 
 /404*
   X-Robots-Tag: noindex
@@ -25,6 +26,14 @@
   Access-Control-Allow-Origin: *
 
 /openapi.json
+  Content-Type: application/vnd.oai.openapi+json
+  Access-Control-Allow-Origin: *
+
+/openapi-v2.json
+  Content-Type: application/vnd.oai.openapi+json
+  Access-Control-Allow-Origin: *
+
+/openapi-editorial.json
   Content-Type: application/vnd.oai.openapi+json
   Access-Control-Allow-Origin: *
 

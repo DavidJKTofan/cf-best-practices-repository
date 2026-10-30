@@ -9,7 +9,7 @@
 #
 # Migrations are idempotent and tracked in the d1_migrations table, so re-running is safe.
 # Only use --seed on an empty database: initial_data.sql is a snapshot of production data with fixed IDs
-# (regenerate it with `npm run db:seed:refresh`).
+# (regenerate it from a private approved export with `npm run db:seed:refresh -- <export.sql>`).
 set -euo pipefail
 
 TARGET=""
@@ -52,6 +52,9 @@ if [[ "$SEED" == true ]]; then
 	if [[ "$TARGET" == '--local' ]]; then
 		# Replay the latest editorial patch locally; remote content changes are explicit, approved operations.
 		npx wrangler d1 execute DB --local --file=./data/content-review-2026-10-29.sql
+		npx wrangler d1 execute DB --local --file=./data/catalog-taxonomy.sql
+		npx wrangler d1 execute DB --local --file=./data/phase5-products.sql
+		# Native Phase 5 snapshots are opt-in disposable previews, never ordinary/remote seeds.
 	fi
 fi
 

@@ -1,0 +1,405 @@
+{
+	"openapi": "3.1.0",
+	"info": {
+		"title": "Cloudflare catalog — v2 public reads",
+		"version": "2.0.0",
+		"description": "Additive summary/detail API. Personal educational project, not official Cloudflare guidance. Existing content uses an explicit schemaVersion 0 legacy adapter; typed content uses schemaVersion 1. Only the published snapshot is public. No editorial commands are exposed."
+	},
+	"servers": [{ "url": "https://db.automatic-demo.com" }],
+	"security": [],
+	"paths": {
+		"/api/v2/entries": {
+			"get": {
+				"operationId": "listCatalogEntries",
+				"summary": "Paginated published summaries, without bodies or sources",
+				"description": "GET/HEAD/OPTIONS. AND filters; first duplicate wins. Unknown parameters/default state are removed before caching. Malformed filters are ignored; unknown valid slugs match nothing. Page size defaults to 20, clamps to 50; page defaults to 1, clamps to 10000. Out-of-range pages return an empty data array without changing total. Stable title (ASCII NOCASE) or modified-date descending order, then numeric ID ascending. Offset pagination is not a cross-request snapshot: writes between requests can shift pages. Browser TTL 60 seconds. Anonymous, CORS-enabled, noindex.",
+				"parameters": [
+					{ "$ref": "#/components/parameters/q" },
+					{ "$ref": "#/components/parameters/family" },
+					{ "$ref": "#/components/parameters/product" },
+					{ "$ref": "#/components/parameters/outcome" },
+					{ "$ref": "#/components/parameters/type" },
+					{ "name": "sort", "in": "query", "schema": { "type": "string", "enum": ["title", "newest"], "default": "title" } },
+					{ "name": "page", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 10000, "default": 1 } },
+					{ "name": "pageSize", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 50, "default": 20 } }
+				],
+				"responses": {
+					"200": {
+						"description": "Published summary page",
+						"content": { "application/json": { "schema": { "$ref": "#/components/schemas/Page" } } }
+					},
+					"429": { "$ref": "./openapi.json#/components/responses/RateLimited" },
+					"500": { "$ref": "./openapi.json#/components/responses/Error" }
+				}
+			}
+		},
+		"/api/v2/entries/{id}": {
+			"get": {
+				"operationId": "readCatalogEntry",
+				"summary": "One complete published catalog entry",
+				"description": "GET/HEAD/OPTIONS. Query parameters are ignored; no preview/draft query exists. JSON browser TTL is 60 seconds. Native entries are not coerced into v1. canonicalPath identifies the published HTML page, which negotiates Markdown; append .md for explicit Markdown.",
+				"parameters": [
+					{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer", "minimum": 1, "maximum": 2147483647 } }
+				],
+				"responses": {
+					"200": {
+						"description": "Published detail",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"required": ["success", "data"],
+									"properties": { "success": { "const": true }, "data": { "$ref": "#/components/schemas/Detail" } }
+								}
+							}
+						}
+					},
+					"404": { "$ref": "./openapi.json#/components/responses/Error" },
+					"429": { "$ref": "./openapi.json#/components/responses/RateLimited" },
+					"500": { "$ref": "./openapi.json#/components/responses/Error" }
+				}
+			}
+		},
+		"/api/v2/facets": {
+			"get": {
+				"operationId": "readCatalogFacets",
+				"summary": "Populated types and revision-scoped taxonomy counts",
+				"description": "GET/HEAD/OPTIONS. Counts apply all effective filters together (conjunctive, not self-excluding). No empty taxonomy hubs or draft-only associations. Pagination and sort are ignored. Legacy imports remain unclassified and contribute only to legacy-practice type counts. Browser TTL 60 seconds; shared practices purge tag, because counts change with publication.",
+				"parameters": [
+					{ "$ref": "#/components/parameters/q" },
+					{ "$ref": "#/components/parameters/family" },
+					{ "$ref": "#/components/parameters/product" },
+					{ "$ref": "#/components/parameters/outcome" },
+					{ "$ref": "#/components/parameters/type" }
+				],
+				"responses": {
+					"200": {
+						"description": "Published facets",
+						"content": { "application/json": { "schema": { "$ref": "#/components/schemas/Facets" } } }
+					},
+					"429": { "$ref": "./openapi.json#/components/responses/RateLimited" },
+					"500": { "$ref": "./openapi.json#/components/responses/Error" }
+				}
+			}
+		}
+	},
+	"components": {
+		"parameters": {
+			"q": {
+				"name": "q",
+				"in": "query",
+				"description": "Literal substring in title/summary only, ASCII case-insensitive. Controls become spaces; trim then retain up to 200 Unicode code points. SQL wildcards/operators have no special meaning. No relevance/stemming/full-body search.",
+				"schema": { "type": "string", "maxLength": 200 }
+			},
+			"family": {
+				"name": "family",
+				"in": "query",
+				"description": "Canonical family slug; no implicit classification of legacy entries.",
+				"schema": { "$ref": "#/components/schemas/Slug" }
+			},
+			"product": { "name": "product", "in": "query", "schema": { "$ref": "#/components/schemas/Slug" } },
+			"outcome": { "name": "outcome", "in": "query", "schema": { "$ref": "#/components/schemas/Slug" } },
+			"type": {
+				"name": "type",
+				"in": "query",
+				"schema": {
+					"type": "string",
+					"enum": ["legacy-practice", "recommendation", "rule-policy", "reference-architecture", "implementation-guide"]
+				}
+			}
+		},
+		"schemas": {
+			"Lifecycle": {
+				"type": "object",
+				"additionalProperties": false,
+				"required": ["state", "reason", "supersededBy"],
+				"description": "Public revision metadata. Deprecated/superseded entries retain stable citations; supersededBy links to replacement guidance.",
+				"properties": {
+					"state": { "enum": ["active", "deprecated", "superseded"] },
+					"reason": { "type": ["string", "null"], "maxLength": 2000 },
+					"supersededBy": { "type": ["integer", "null"], "minimum": 1, "maximum": 2147483647 }
+				}
+			},
+			"Slug": { "type": "string", "maxLength": 80, "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+			"TextList": { "type": "array", "minItems": 1, "maxItems": 20, "items": { "type": "string", "minLength": 1, "maxLength": 2000 } },
+			"Slugs": { "type": "array", "uniqueItems": true, "maxItems": 20, "items": { "$ref": "#/components/schemas/Slug" } },
+			"Summary": {
+				"type": "object",
+				"required": [
+					"practiceId",
+					"revisionId",
+					"schemaVersion",
+					"type",
+					"title",
+					"summary",
+					"lifecycle",
+					"primaryFamily",
+					"families",
+					"products",
+					"outcomes",
+					"evidence",
+					"maturity",
+					"modifiedAt",
+					"factVerifiedAt",
+					"reviewDueAt",
+					"v1Eligible",
+					"canonicalPath",
+					"detailPath"
+				],
+				"properties": {
+					"practiceId": { "type": "integer" },
+					"revisionId": { "type": ["integer", "null"] },
+					"schemaVersion": { "enum": [0, 1] },
+					"type": { "enum": ["legacy-practice", "recommendation", "rule-policy", "reference-architecture", "implementation-guide"] },
+					"title": { "type": "string" },
+					"summary": { "type": "string", "maxLength": 500 },
+					"lifecycle": { "$ref": "#/components/schemas/Lifecycle" },
+					"primaryFamily": { "type": ["string", "null"] },
+					"families": { "$ref": "#/components/schemas/Slugs" },
+					"products": { "$ref": "#/components/schemas/Slugs" },
+					"outcomes": { "$ref": "#/components/schemas/Slugs" },
+					"evidence": { "enum": ["unreviewed", "public-docs", "lab-tested"] },
+					"maturity": { "enum": ["unknown", "ga", "beta", "early-access", "announcement-only"] },
+					"modifiedAt": {
+						"type": ["string", "null"],
+						"description": "Recorded legacy UTC timestamp, or typed content YYYY-MM-DD date. Not fact verification."
+					},
+					"factVerifiedAt": { "type": ["string", "null"], "format": "date" },
+					"reviewDueAt": { "type": ["string", "null"], "format": "date" },
+					"v1Eligible": { "type": "boolean" },
+					"canonicalPath": { "type": "string", "pattern": "^/practices/[1-9][0-9]*$" },
+					"detailPath": { "type": "string" }
+				}
+			},
+			"Page": {
+				"type": "object",
+				"required": ["success", "data", "count", "total", "page", "pageSize", "pages", "query", "links"],
+				"properties": {
+					"success": { "const": true },
+					"data": { "type": "array", "maxItems": 50, "items": { "$ref": "#/components/schemas/Summary" } },
+					"count": { "type": "integer" },
+					"total": { "type": "integer" },
+					"page": { "type": "integer" },
+					"pageSize": { "type": "integer" },
+					"pages": { "type": "integer" },
+					"query": {
+						"type": "object",
+						"description": "Effective q, family, product, outcome, type, sort, page, pageSize; absent string filters are empty strings."
+					},
+					"links": {
+						"type": "object",
+						"required": ["self", "next", "previous"],
+						"properties": {
+							"self": { "type": "string" },
+							"next": { "type": ["string", "null"] },
+							"previous": { "type": ["string", "null"] }
+						}
+					}
+				}
+			},
+			"Facet": {
+				"type": "object",
+				"required": ["slug", "count"],
+				"properties": { "slug": { "type": "string" }, "label": { "type": "string" }, "count": { "type": "integer", "minimum": 1 } }
+			},
+			"Facets": {
+				"type": "object",
+				"required": ["success", "data"],
+				"properties": {
+					"success": { "const": true },
+					"data": {
+						"type": "object",
+						"required": ["types", "families", "products", "outcomes"],
+						"properties": {
+							"types": { "type": "array", "items": { "$ref": "#/components/schemas/Facet" } },
+							"families": { "type": "array", "items": { "$ref": "#/components/schemas/Facet" } },
+							"products": { "type": "array", "items": { "$ref": "#/components/schemas/Facet" } },
+							"outcomes": { "type": "array", "items": { "$ref": "#/components/schemas/Facet" } }
+						}
+					}
+				}
+			},
+			"Source": {
+				"type": "object",
+				"additionalProperties": false,
+				"required": ["url", "title"],
+				"properties": { "url": { "type": "string", "format": "uri", "maxLength": 1000 }, "title": { "type": "string", "maxLength": 500 } }
+			},
+			"Applicability": {
+				"type": "object",
+				"additionalProperties": false,
+				"required": ["requires", "excludes", "dependencies"],
+				"properties": {
+					"requires": { "$ref": "#/components/schemas/TextList" },
+					"excludes": { "type": "array", "maxItems": 20, "items": { "type": "string", "maxLength": 2000 } },
+					"dependencies": { "type": "array", "maxItems": 20, "items": { "type": "string", "maxLength": 2000 } }
+				}
+			},
+			"Block": {
+				"oneOf": [
+					{
+						"type": "object",
+						"additionalProperties": false,
+						"required": ["kind", "text"],
+						"properties": { "kind": { "enum": ["prose", "warning"] }, "text": { "type": "string", "minLength": 1, "maxLength": 5000 } }
+					},
+					{
+						"type": "object",
+						"additionalProperties": false,
+						"required": ["kind", "language", "filename", "code", "purpose"],
+						"properties": {
+							"kind": { "const": "code" },
+							"language": { "type": "string", "maxLength": 40 },
+							"filename": { "type": "string", "maxLength": 200 },
+							"code": { "type": "string", "maxLength": 10000 },
+							"purpose": { "type": "string", "maxLength": 2000 }
+						}
+					}
+				]
+			},
+			"Blocks": { "type": "array", "minItems": 1, "maxItems": 30, "items": { "$ref": "#/components/schemas/Block" } },
+			"RecommendationBody": {
+				"type": "object",
+				"additionalProperties": false,
+				"required": ["rationale", "guidance", "validation"],
+				"properties": {
+					"rationale": { "type": "string", "maxLength": 5000 },
+					"guidance": { "$ref": "#/components/schemas/Blocks" },
+					"validation": { "$ref": "#/components/schemas/TextList" }
+				}
+			},
+			"RuleBody": {
+				"type": "object",
+				"additionalProperties": false,
+				"required": [
+					"product",
+					"phase",
+					"scope",
+					"conditions",
+					"availability",
+					"expression",
+					"action",
+					"rollout",
+					"rollback",
+					"validation"
+				],
+				"properties": {
+					"scope": { "type": "string", "maxLength": 2000 },
+					"conditions": { "$ref": "#/components/schemas/TextList" },
+					"availability": { "$ref": "#/components/schemas/TextList" },
+					"product": { "$ref": "#/components/schemas/Slug" },
+					"phase": { "type": "string", "maxLength": 200 },
+					"expression": { "type": "string", "maxLength": 5000 },
+					"action": { "type": "string", "maxLength": 2000 },
+					"rollout": { "$ref": "#/components/schemas/TextList" },
+					"rollback": { "$ref": "#/components/schemas/TextList" },
+					"validation": { "$ref": "#/components/schemas/TextList" }
+				}
+			},
+			"ArchitectureBody": {
+				"type": "object",
+				"additionalProperties": false,
+				"required": [
+					"assumptions",
+					"components",
+					"flows",
+					"trustBoundaries",
+					"routingAndDns",
+					"identityPolicy",
+					"failureModes",
+					"tradeoffs",
+					"diagramText",
+					"validation",
+					"rollback"
+				],
+				"properties": {
+					"routingAndDns": { "$ref": "#/components/schemas/TextList" },
+					"identityPolicy": { "$ref": "#/components/schemas/TextList" },
+					"assumptions": { "$ref": "#/components/schemas/TextList" },
+					"components": { "$ref": "#/components/schemas/TextList" },
+					"flows": { "$ref": "#/components/schemas/TextList" },
+					"trustBoundaries": { "$ref": "#/components/schemas/TextList" },
+					"failureModes": { "$ref": "#/components/schemas/TextList" },
+					"tradeoffs": { "$ref": "#/components/schemas/TextList" },
+					"diagramText": { "type": "string", "maxLength": 5000 },
+					"validation": { "$ref": "#/components/schemas/TextList" },
+					"rollback": { "$ref": "#/components/schemas/TextList" }
+				}
+			},
+			"GuideBody": {
+				"description": "An implementation guide or explicitly discriminated operational runbook. Runbooks remain type=implementation-guide; inspect body.variant after retrieving detail.",
+				"oneOf": [{ "$ref": "#/components/schemas/StepsGuideBody" }, { "$ref": "#/components/schemas/RunbookBody" }]
+			},
+			"RunbookBody": {
+				"type": "object",
+				"additionalProperties": false,
+				"required": ["variant", "task", "symptoms", "diagnostics", "safeChanges", "recovery", "successCriteria", "rollback"],
+				"properties": {
+					"variant": { "const": "operational-runbook" },
+					"task": { "type": "string", "minLength": 1, "maxLength": 5000 },
+					"symptoms": { "$ref": "#/components/schemas/TextList" },
+					"diagnostics": { "$ref": "#/components/schemas/TextList" },
+					"safeChanges": { "$ref": "#/components/schemas/TextList" },
+					"recovery": { "$ref": "#/components/schemas/TextList" },
+					"successCriteria": { "$ref": "#/components/schemas/TextList" },
+					"rollback": { "$ref": "#/components/schemas/TextList" }
+				}
+			},
+			"StepsGuideBody": {
+				"type": "object",
+				"additionalProperties": false,
+				"required": ["prerequisites", "steps", "artifacts", "validation", "rollback"],
+				"properties": {
+					"prerequisites": { "$ref": "#/components/schemas/TextList" },
+					"steps": { "$ref": "#/components/schemas/TextList" },
+					"artifacts": { "$ref": "#/components/schemas/Blocks" },
+					"validation": { "$ref": "#/components/schemas/TextList" },
+					"rollback": { "$ref": "#/components/schemas/TextList" }
+				}
+			},
+			"TypedDetail": {
+				"allOf": [
+					{ "$ref": "#/components/schemas/Summary" },
+					{
+						"type": "object",
+						"required": ["applicability", "sources", "body"],
+						"properties": {
+							"schemaVersion": { "const": 1 },
+							"revisionId": { "type": "integer" },
+							"applicability": { "$ref": "#/components/schemas/Applicability" },
+							"sources": { "type": "array", "minItems": 1, "maxItems": 16, "items": { "$ref": "#/components/schemas/Source" } }
+						}
+					},
+					{
+						"oneOf": [
+							{ "properties": { "type": { "const": "recommendation" }, "body": { "$ref": "#/components/schemas/RecommendationBody" } } },
+							{ "properties": { "type": { "const": "rule-policy" }, "body": { "$ref": "#/components/schemas/RuleBody" } } },
+							{
+								"properties": { "type": { "const": "reference-architecture" }, "body": { "$ref": "#/components/schemas/ArchitectureBody" } }
+							},
+							{ "properties": { "type": { "const": "implementation-guide" }, "body": { "$ref": "#/components/schemas/GuideBody" } } }
+						]
+					}
+				]
+			},
+			"LegacyDetail": {
+				"allOf": [
+					{ "$ref": "#/components/schemas/Summary" },
+					{
+						"type": "object",
+						"required": ["applicability", "sources", "body"],
+						"properties": {
+							"schemaVersion": { "const": 0 },
+							"type": { "const": "legacy-practice" },
+							"revisionId": { "type": "null" },
+							"applicability": { "type": "null" },
+							"sources": { "type": "array", "items": { "$ref": "#/components/schemas/Source" } },
+							"body": { "$ref": "./openapi.json#/components/schemas/Practice" }
+						}
+					}
+				]
+			},
+			"Detail": { "oneOf": [{ "$ref": "#/components/schemas/LegacyDetail" }, { "$ref": "#/components/schemas/TypedDetail" }] }
+		}
+	}
+}

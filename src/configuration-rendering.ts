@@ -6,8 +6,8 @@ type ConfigurationSection = { heading: string; kind: 'expression' | 'configurati
 
 export function configurationSections(p: Practice): ConfigurationSection[] {
 	const sections: ConfigurationSection[] = [];
-	if (p.expression) sections.push({ heading: 'Example expression', kind: 'expression', text: p.expression });
-	if (p.expressions_configuration_details && p.expressions_configuration_details !== p.expression) {
+	if (p.expression?.trim()) sections.push({ heading: 'Example expression', kind: 'expression', text: p.expression });
+	if (p.expressions_configuration_details?.trim() && p.expressions_configuration_details !== p.expression) {
 		sections.push({ heading: 'Configuration guidance', kind: 'configuration', text: p.expressions_configuration_details });
 	}
 	return sections;

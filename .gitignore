@@ -172,3 +172,8 @@ dist
 .wrangler/
 .DS_Store
 d1_schema_creation.log
+
+# Offline catalog tooling
+__pycache__/
+.astro/
+dist-staging/

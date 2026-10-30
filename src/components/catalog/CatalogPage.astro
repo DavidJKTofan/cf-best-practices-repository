@@ -1,0 +1,150 @@
+---
+import FieldGuide from '../../layouts/FieldGuide.astro';
+import EntrySummary from './EntrySummary.astro';
+import FilterForm from './FilterForm.astro';
+import { documentPath, markdownPath } from '../../modules/catalog/document-state';
+import type { loadListingPage } from '../../modules/catalog/listing-page';
+import { catalogSearch } from '../../modules/catalog/v2-filters';
+import { SITE_URL } from '../../content-rendering';
+interface Props {
+	state: Awaited<ReturnType<typeof loadListingPage>>;
+}
+const { query, family, base, familyLabel, result, facets, status, starter } = Astro.props.state;
+const failed = status === 503;
+const missing = status === 404;
+const pageLink = (page: number) => {
+	const params = new URLSearchParams(catalogSearch({ ...query, page }));
+	if (family) params.delete('family');
+	return `${base}${params.size ? `?${params}` : ''}`;
+};
+const intros: Record<string, string> = {
+	'application-services': 'Narrow the match. Understand the action. Observe before enforcing.',
+	'cloudflare-one':
+		'Identity, connectivity, and policy. Start with a protected application path, then rehearse failure recovery without weakening its trust boundaries.',
+	'developer-platform':
+		'Build for bounded reads, retries, and partial failures. Start with an implementation guide, then rehearse its operational recovery.',
+};
+const title = missing ? 'Family not found' : familyLabel || 'Catalog';
+---
+
+<FieldGuide
+	title={title}
+	canonical={documentPath(Astro.url)}
+	markdown={markdownPath(Astro.url)}
+	noindex={failed || missing}
+	schema={
+		!failed && !missing
+			? {
+					'@context': 'https://schema.org',
+					'@type': 'CollectionPage',
+					name: title,
+					url: `${SITE_URL}${documentPath(Astro.url)}`,
+					mainEntity: {
+						'@type': 'ItemList',
+						numberOfItems: result?.count ?? 0,
+						itemListElement: result?.data.map((e, i) => ({
+							'@type': 'ListItem',
+							position: i + 1,
+							name: e.title,
+							url: `${SITE_URL}${e.canonicalPath}`,
+						})),
+					},
+				}
+			: undefined
+	}
+>
+	<script slot="head" is:inline type="module" src="/catalog-search.js"></script>
+	<nav class="breadcrumbs" aria-label="Breadcrumb">
+		<a href="/">Field guide</a>
+		<span aria-hidden="true"> / </span>
+		{family ? <a href="/catalog">Browse all</a> : 'Browse all'}
+		{family && <span> / {familyLabel || family}</span>}
+	</nav>
+	<header class="page-heading">
+		<h1>{title}</h1>
+		<p class="lede">
+			{intros[family] ?? 'Search recommendations, architectures, and implementation guides. Open an entry for full details and sources.'}
+		</p>
+	</header>
+	{!failed && starter && (
+		<section class="starter-collection" aria-labelledby="starter-heading">
+			<div>
+				<p class="eyebrow">Start here</p>
+				<h2 id="starter-heading">{starter.title}</h2>
+			</div>
+			<ol>
+				{starter.entries.map((entry) => (
+					<li>
+						<p class="eyebrow">{entry.purpose}</p>
+						<a href={entry.canonicalPath}>{entry.title} →</a>
+					</li>
+				))}
+			</ol>
+		</section>
+	)}
+	{missing ? (
+		<section class="empty-state">
+			<h2>No published family here</h2>
+			<p>Empty or unknown families do not have a hub.</p>
+			<a href="/catalog">Browse published guidance</a>
+		</section>
+	) : (
+		<>
+			<p class="visually-hidden" role="status" aria-live="polite" data-catalog-status></p>
+			<div class="catalog-grid" data-catalog-view>
+				<aside>
+					<FilterForm query={query} facets={facets} action={base} familyLocked={!!family} />
+				</aside>
+				<section aria-label="Search results" data-catalog-results>
+					<p class="results-count" role="status">
+						{failed ? 'Results temporarily unavailable' : `${result?.total ?? 0} matching entries`}{' '}
+						<span>{!failed && `Page ${query.page} of ${result?.pages || 1}`}</span>
+					</p>
+					{[query.q, query.family, query.product, query.type, query.outcome].some(Boolean) && (
+						<p class="active-filters">
+							Active:{' '}
+							{[query.q && `“${query.q}”`, query.family, query.product, query.type, query.outcome].filter(Boolean).join(' / ') ||
+								'All published guidance'}
+						</p>
+					)}
+					{failed ? (
+						<div class="empty-state">
+							<h2>The catalog is temporarily unavailable</h2>
+							<p>Your search is preserved in the form. Please try again.</p>
+							<a href={documentPath(Astro.url)}>Retry this search</a>
+						</div>
+					) : result?.data.length ? (
+						result.data.map((entry) => <EntrySummary entry={entry} />)
+					) : (
+						<div class="empty-state">
+							<h2>No matching guidance</h2>
+							<p>Try a broader phrase or remove a filter. Imported legacy practices have not been assigned to product families.</p>
+							<a href={base}>Reset this search</a>
+						</div>
+					)}
+					{result && result.pages > 1 && (
+						<nav class="pagination" aria-label="Result pages">
+							{result.links.previous ? (
+								<a rel="prev" href={pageLink(query.page - 1)}>
+									← Previous
+								</a>
+							) : (
+								<span>Previous</span>
+							)}
+							<span>
+								{query.page} / {result.pages || 1}
+							</span>
+							{result.links.next ? (
+								<a rel="next" href={pageLink(query.page + 1)}>
+									Next →
+								</a>
+							) : (
+								<span>Next</span>
+							)}
+						</nav>
+					)}
+				</section>
+			</div>
+		</>
+	)}
+</FieldGuide>

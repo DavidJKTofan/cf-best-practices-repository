@@ -226,7 +226,15 @@ describe('agent discovery assets', () => {
 		const schema = await schemaResponse.json();
 		expect(schema.openapi).toBe('3.1.0');
 		expect(schema.security).toEqual([]);
-		expect(Object.keys(schema.paths)).toEqual(['/api/practices', '/api/categories', '/api/features', '/practices/{id}']);
+		expect(Object.keys(schema.paths)).toEqual([
+			'/api/v2/entries',
+			'/api/v2/entries/{id}',
+			'/api/v2/facets',
+			'/api/practices',
+			'/api/categories',
+			'/api/features',
+			'/practices/{id}',
+		]);
 		expect(schema.paths['/api/practices'].get.parameters.map((p) => p.name)).toEqual([
 			'search',
 			'categoryId',
