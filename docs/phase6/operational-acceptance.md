@@ -54,9 +54,10 @@ On failure, record the last-good version and scope, preserve diagnostics/receipt
 - [x] Source/build/deployment/version mapping and targeted read evidence reconciled for v1.1.
 - [x] Feature-specific smoke implemented locally, exercised against synthetic/built responses and the existing live target.
 - [x] Recovery manifest requirements, role ownership, monitoring windows and acceptance/stop criteria documented.
+- [x] Owner-requested documentation/probe release `2e9c50c` committed/deployed; exact-commit CI and ten-group post-deploy filter/HIT smoke pass. This is scoped deployment approval, not complete operational acceptance.
 - [ ] Actual operator/reviewer assignments and owner acceptance reconciled privately.
 - [ ] Exact deployed recovery bytes retained/matched and runtime recovery independently accepted.
 - [ ] Monitoring thresholds/baseline/windows completed and signed off.
 - [ ] Staging, authenticated/purge journeys and broader certification/publication gates closed with evidence.
 
-**Next:** owner reviews the local documentation/probe diff, assigns the release observer/recovery operator/independent reviewers and reconciles the recorded v1.1 acceptance. Then plan the specifically approved private provenance/recovery and staging journeys. No commit, push, redeployment or remote write follows automatically from this checklist.
+**Next:** retain the [release evidence](../rollout-2026-10-31-v1.1.md), assign the release observer/recovery operator/independent reviewers and reconcile the recorded scope/limits acceptance. Then plan the specifically approved private provenance/recovery and staging journeys. No further commit, push, redeployment or remote write follows automatically from this checklist.
