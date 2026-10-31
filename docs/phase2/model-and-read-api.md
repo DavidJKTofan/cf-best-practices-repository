@@ -1,12 +1,12 @@
 # Phase 2: additive model and versioned reads
 
-**Status:** core completed and verified locally on 2026-10-30; independent review and fresh private production-copy rehearsal remain open. Not staged or deployed. Owner directed Phase 2 continuation; no commit, push, remote write, deployment, or security-policy change authorized. The [roadmap](../cloudflare-platform-roadmap.md) remains the checkpoint.
+**Historical Phase 2 checkpoint:** core completed locally on 2026-10-30. The subsequent [initial scoped release](../rollout-2026-10-31.md) completed fresh private-copy rehearsal, applied 0006–0007 and deployed the readers/handlers; [v1.1](../rollout-2026-10-31-v1.1.md) deployed restored filters. Phase-specific implementation/evidence below is historical. Independent review, staging, exact-deployed-artifact recovery and authenticated mutation/purge gates remain open; no new operation is authorized by this document. The [roadmap](../cloudflare-platform-roadmap.md) is the current checkpoint.
 
-**Historical phase boundary:** this records Phase 2's JSON-only native implementation. [Phase 3](../phase3/frontend-and-pilots.md) now adds local HTML/Markdown canonical pages and native-inclusive exports/discovery. References below to null native canonical paths and legacy-only document exports describe the Phase 2 checkpoint, not the current local presentation. v1 eligibility, legacy-conversion and production-copy gates remain unchanged.
+**Historical phase boundary:** this records Phase 2's JSON-only native implementation. [Phase 3](../phase3/frontend-and-pilots.md) added HTML/Markdown canonical pages and native-inclusive exports/discovery; readers are now deployed, but native content remains fixture-only. References below to null native canonical paths and legacy-only document exports describe the Phase 2 checkpoint, not the current presentation. v1 eligibility and legacy-conversion gates remain unchanged; current rehearsal/recovery status is in the linked release records.
 
 ## Model and compatibility decisions
 
-**2026-10-31 local additive follow-up:** v2 now exposes recorded practice discovery (`categoryId`, `featureId`, `domain`, `level`, `impact`, `difficulty`), summary/detail `legacyClassification` and `data.legacy` facet groups. These read-time published-legacy joins restore omitted UI controls without migrations, v1 changes or inferred native taxonomy. See [contract and local evidence](../phase6/filter-restoration.md); this follow-up is not deployed.
+**2026-10-31 deployed additive follow-up (`53e1f32`):** v2 exposes recorded practice discovery (`categoryId`, `featureId`, `domain`, `level`, `impact`, `difficulty`), summary/detail `legacyClassification` and `data.legacy` facet groups. These read-time published-legacy joins restore omitted UI controls without migrations, v1 changes or inferred native taxonomy. See [contract and local/live evidence](../phase6/filter-restoration.md).
 
 Migration `0006_catalog_model.sql` is additive: no legacy table rebuild, column removal, receipt rewrite, or practice-ID change.
 

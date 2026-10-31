@@ -2,6 +2,8 @@
 
 **Status: tooling/rehearsal verified; a separately owner-approved scoped production release has deployed.** The initial local Phase 6 review and [private-copy evidence](scalability-and-production-readiness.md) did not authorize rollout. The owner subsequently accepted outstanding independent-review/staging limits for the [2026-10-31 release](../rollout-2026-10-31.md): fresh private rehearsals, 0006–0007 and ordinary patches, corrected Workers Builds, Astro/v2 deployment and targeted anonymous HTTP/cache/browser checks passed. No staging resources, live grants, native publication or security-policy changes occurred. Independent review, exact-deployed-artifact recovery, staging, authenticated mutations/retries and purge propagation remain unverified. The [roadmap](../cloudflare-platform-roadmap.md) is the checkpoint. **Phase 6's complete live exit gate remains open; this scoped approval does not authorize later releases.**
 
+**Current observed version:** `53e1f32` (`v1.1`) subsequently deployed through the existing `main` push integration. See [source/build/version reconciliation and read evidence](../rollout-2026-10-31-v1.1.md); no further migration/data patch is needed. This observation does not reconcile a new approval or establish a matching recovery artifact. The [operational acceptance checklist](operational-acceptance.md) specifies owners, private artifact provenance, monitoring windows and stop criteria; its sign-offs remain open. Deployment-approval mechanism changes are deferred at the owner's request.
+
 ## Tools and boundaries
 
 | Command                                                              | Purpose                                                              | Does not establish                                              |
@@ -22,6 +24,8 @@ Before any remote operation, record privately:
 - Exact artifact/source revision and reviewed dependency remediation or owner-accepted disposition. Initial Phase 6 audits reported **7 findings (4 moderate, 3 high)**, including **3 (2 moderate, 1 high)** with `--omit=dev`. Subsequent [targeted local hardening](development-hardening.md) refreshes patched Wrangler/Vitest/plugin tooling without framework-major changes: root and isolated proof now return **0 findings and exit 0** for full and production-only audits. Independently review the changed lockfiles and re-audit before release; this is not a guarantee of security or a claim about deployed exploitability.
 - Separately approved staging Worker/database/hostname/Access application/policies, then separately approved production changes. Inspect target configuration with read-only management tools before proposing mutations. Keep live expressions, identities, audiences, inventories and telemetry private.
 - Recovery owner, tested compatible artifact, write/reconciliation window, protected backup location, copy freshness/provenance and a private pre-mutation Time Travel bookmark. A bookmark is not permission to restore; a Worker rollback does not roll back D1.
+
+Use the [private manifest and accountable-role checklist](operational-acceptance.md) to reconcile these records. A source commit/build/version mapping is necessary but does not prove byte-matched recovery bundles, configuration, assets or dependencies. Appoint actual operators/reviewers privately; role labels in a checklist are not assignments or application grants.
 
 Private export, staging provisioning, Access/zone changes, each remote D1 change, deployment, editorial grants, publication and recovery are distinct approvals. Successful tests grant none of them. Obtain renewed approval when scope, inputs or targets change.
 
@@ -102,9 +106,11 @@ Only on an explicitly approved deployed target:
 
 ```bash
 npm run release:smoke -- --base https://approved.example.com --expect-cache-hits
+# For restored recorded-filter discovery (requires all six fields on --legacy-id, default 18):
+npm run release:smoke -- --base https://approved.example.com --expect-cache-hits --expect-legacy-filters
 # After an authorized genuine publication, use its ACTUAL ID and revision:
 npm run release:smoke -- --base https://approved.example.com \
-  --native-id 123 --expected-revision 7 --expect-cache-hits
+  --native-id 123 --expected-revision 7 --expect-cache-hits --expect-legacy-filters
 ```
 
 For intentional staging canonicals only add `--canonical https://canonical.example.com`; never conceal a production mismatch. Probes have no default target, credentials, cookies, write methods or redirect following. Responses are timed out and bounded to 2 MiB each; excess fails, never silently truncates. Output is check names/results, not raw responses/Access redirects.
@@ -112,6 +118,8 @@ For intentional staging canonicals only add `--canonical https://canonical.examp
 By default public response cookies fail the probe. On an approved target known to use Cloudflare bot products, explicitly add `--allow-cloudflare-bm-cookie` to allow **only** the documented [`__cf_bm` cookie](https://developers.cloudflare.com/fundamentals/reference/policies-compliances/cloudflare-cookies/#__cf_bm-cookie-for-cloudflare-bot-products). Application, mixed, lookalike and folded cookies still fail; cookie values are never printed or sent back. This is a named live-probe exception, not proof of cookie provenance or permission to cache application cookies. Worker-level no-cookie/cache tests stay strict, and security settings must not be weakened to pass probes.
 
 Checks cover HTML/negotiated Markdown/q exclusions/HEAD, explicit Markdown, public OPTIONS, v1 exclusion/native expected-revision parity, sitemap/agent discovery/served skill digest, anonymous dashboard/API/preview denial and optional repeated independent HTML/Markdown HITs. It is not an exhaustive crawl. A perimeter can also deny a request: inspect actual Access configuration and signed behavior separately. An expected-revision check without a publication is not a purge test.
+
+`--expect-legacy-filters` adds six individual filters and a conjunction checked against public v1 records, v2 summary/detail classification and facet counts, SSR selections, negotiated/explicit Markdown parity, leading-zero/duplicate/invalid normalization, and retained zero-result selections/removal links. Native classification must be null when a native ID/revision is also supplied. Baseline-only smoke stays compatible with earlier deployments and does not certify this feature. The feature check fails, rather than silently truncates, if public v1 data exceeds the response bound; reassess the probe's sampling/export contract before catalog growth requires it.
 
 For each approved genuine mutation privately retain the actor/exact command/body/version/key and response/uncertainty. Confirm unchanged replay returns the same result, changed-data reuse conflicts, invalid JWTs/ungranted actors deny, origin/bytes remain enforced, review independence/revocation/base conflicts work, and previews stay private/no-store/noindex without a public cache tag. Do not add throwaway production content to manufacture evidence.
 
@@ -125,6 +133,10 @@ Complete the runtime/schema/negotiation/security matrix and browser keyboard/mob
 
 Only after approved remote verification, export privately, use the existing allowlisted `db:seed:refresh` sanitizer, review the public-only diff and rerun checks. No seed refresh occurred here.
 
+## 6. Operational observation and sign-off
+
+Follow the [operational acceptance checklist](operational-acceptance.md): nominate the release observer and recovery operator, record the comparable baseline and agreed numerical thresholds privately, then observe the proposed first **30 minutes** and next **24 hours** (or explicitly agreed alternatives). Check public/filter/discovery reads, privacy/Access, Worker exceptions/5xx/latency, D1 work/cost and cache correctness; authenticated purge verification remains a distinct approved journey. Missing traffic/evidence, incomplete windows or unresolved regressions leave sign-off open. Stop/escalate on privacy or correctness regressions; no rollback, restore or security change is automatic. These windows have not been claimed as completed for v1.1.
+
 ## Evidence and next action
 
 The roadmap records exact current checks/counts. Initial Phase 6 verification passed **210/210 workerd tests**, strict types/import/discovery guards, four patches twice, **5 + 5** Python checks, synthetic tooling checks and the built release-probe journey. Subsequent [search/dependency hardening](development-hardening.md) passes **213/213 workerd + 24/24 frontend checks**, the same content/release matrix, clean installs/audits, regenerated types and a refreshed **12/12-check isolated proof**. Normal Astro check/build and separate **synthetic-target staging build**, generated isolation/artifact checks and deploy **dry runs** pass with patched tooling. Neither milestone involved a remote export/probe, remote write, grant, publication, deployment or security change.
@@ -133,7 +145,9 @@ The roadmap records exact current checks/counts. Initial Phase 6 verification pa
 
 **Subsequent scoped rollout:** [2026-10-31 evidence](../rollout-2026-10-31.md) supersedes the earlier no-deployment checkpoint. Migrations/deployment and anonymous checks succeeded; local release tests now include **9 Node** checks after adding strict-default/explicit-bot-cookie regressions. No authenticated production mutation or purge test was performed.
 
-**Next:** independently review exact source/artifact/dependencies and reconcile the exact deployed compatible recovery artifact (v0.8 source with current dependencies is not that proof). Approve exact staging resources/Access design before provisioning/deploying, then complete signed/public/browser/cache staging journeys. Keep Phase 2's combined compatibility gate and Phase 6's full live checklist open. Refresh recovery inputs/bookmark before any later approved production mutation.
+**v1.1 reconciliation and local probe follow-up:** [current release evidence](../rollout-2026-10-31-v1.1.md) records deployed `53e1f32`, its exact-commit CI success, targeted live checks and **10/10 live smoke groups** with recorded-filter expectations and HITs. The local follow-up passes **225 runtime + 37 frontend**, **9 Python + 12 Node** release checks and the remaining type/content/build/dry-run matrix. These documentation/probe changes are not deployed or committed. Fresh private table/backup inspection, exact-artifact recovery, staging, authenticated mutations/purges and monitoring acceptance were not performed by this follow-up.
+
+**Next:** owner reviews the local follow-up, reconciles v1.1 scope/limits acceptance and assigns the recovery operator, release observer and independent reviewers. Independently review exact source/artifact/dependencies and reconcile the exact deployed compatible recovery artifact (v0.8 source with current dependencies is not that proof). Approve exact staging resources/Access design before provisioning/deploying, then complete signed/public/browser/cache staging journeys and operational sign-off. Phase 2's private-copy rehearsal has evidence, but exact-artifact/independent compatibility acceptance and Phase 6's full live exit gate remain open. Refresh recovery inputs/bookmark before any later approved production mutation.
 
 ## Public references
 

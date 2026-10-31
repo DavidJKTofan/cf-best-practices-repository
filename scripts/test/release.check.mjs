@@ -6,6 +6,7 @@ import { join, resolve } from 'node:path';
 import { createHash } from 'node:crypto';
 import { validateStaging, productionConfig, stagingSource, checkGenerated, ROOT, SOURCE_KEYS } from '../release/staging.mjs';
 import { runSmoke } from '../release/smoke.mjs';
+import { filterFixture } from './helpers/release-filter-fixture.mjs';
 
 const production = productionConfig();
 function staging() {
@@ -139,7 +140,7 @@ function fixtureFetch(log, { badRevision = false, redirectPublic = false, cacheH
 			body = JSON.stringify({
 				data: path.endsWith('/18')
 					? { schemaVersion: 0 }
-					: { practiceId: 121, revisionId: badRevision ? 1 : 2, schemaVersion: 1, title: 'Published fixture' },
+					: { practiceId: 121, revisionId: badRevision ? 1 : 2, schemaVersion: 1, title: 'Published fixture', legacyClassification: null },
 			});
 		} else if (path === '/api/v2/entries') {
 			type = 'application/json';
@@ -190,6 +191,92 @@ test('read-only smoke verifies variants, expected revision, discovery, anonymous
 	assert.equal(result.responseCookiePolicy, 'none');
 	assert.ok(log.length > 20);
 	assert.ok(!JSON.stringify(result).includes('Published fixture'));
+});
+
+test('legacy-filter opt-in verifies six SSR controls, v1/summary/detail/facet parity, normalization, Markdown and clear links', async () => {
+	const log = [];
+	const result = await runSmoke({
+		base: BASE,
+		nativeId: 121,
+		expectedRevision: 2,
+		expectLegacyFilters: true,
+		fetcher: filterFixture(fixtureFetch(log)),
+	});
+	assert.equal(result.ok, true, JSON.stringify(result));
+	assert.equal(result.legacyFiltersRequired, true);
+	assert.deepEqual(
+		result.checks.find((c) => c.name === 'recorded-legacy-filter-contract'),
+		{ name: 'recorded-legacy-filter-contract', ok: true },
+	);
+	assert.ok(log.some(({ target }) => target.includes('categoryId=0001')));
+	assert.ok(log.some(({ target }) => target.includes('categoryId=invalid&categoryId=1')));
+	assert.ok(log.every(({ init }) => ['GET', 'HEAD', 'OPTIONS'].includes(init.method) && !init.body));
+	const old = await runSmoke({ base: BASE, expectLegacyFilters: true, fetcher: fixtureFetch([]) });
+	assert.equal(
+		old.checks.find((c) => c.name === 'recorded-legacy-filter-contract').ok,
+		false,
+		'Old deployments must fail the feature expectation',
+	);
+});
+
+test('legacy-filter expectation rejects native classification without widening public write access', async () => {
+	const fixture = filterFixture(fixtureFetch([]));
+	const result = await runSmoke({
+		base: BASE,
+		nativeId: 121,
+		expectedRevision: 2,
+		expectLegacyFilters: true,
+		fetcher: async (target, init) => {
+			const response = await fixture(target, init);
+			if (new URL(target).pathname !== '/api/v2/entries/121') return response;
+			const body = await response.json();
+			body.data.legacyClassification = { domain: 'Security' };
+			return Response.json(body, { headers: response.headers });
+		},
+	});
+	assert.equal(result.ok, false);
+	assert.equal(result.checks.find((c) => c.name === 'expected-native-revision-html-markdown-json').ok, false);
+});
+
+test('legacy-filter opt-in fails missing controls/classification, wrong counts, ignored filters, normalization and representation regressions', async () => {
+	const mutations = [
+		(url, body) => (url.pathname === '/catalog' ? body.replace('<select name="domain">', '<select name="wrong">') : body),
+		(url, body) => (url.pathname === '/api/v2/entries/18' ? body.replace('"legacyClassification":', '"wrong":') : body),
+		(url, body) => (url.pathname === '/api/v2/facets' ? body.replace(/"count":\d+/g, '"count":999') : body),
+		(url, body) =>
+			url.pathname === '/api/v2/entries' && url.searchParams.has('difficulty') ? JSON.stringify({ ...JSON.parse(body), total: 999 }) : body,
+		(url, body) =>
+			url.search.includes('categoryId=000') && url.pathname === '/api/v2/entries'
+				? body.replace('"categoryId":"1"', '"categoryId":"0001"')
+				: body,
+		(url, body) =>
+			url.search.includes('categoryId=invalid') && url.pathname === '/api/v2/entries'
+				? JSON.stringify({ ...JSON.parse(body), total: 999 })
+				: body,
+		(url, body) => (url.pathname === '/catalog' && !body.startsWith('<html>') ? body.replace(/Difficulty:/g, 'Wrong:') : body),
+		(url, body) => (url.pathname === '/catalog.md' ? body + '\nMismatched alias' : body),
+		(url, body) =>
+			url.pathname === '/catalog' && url.searchParams.get('page') === '2' ? body.replaceAll('name="categoryId"', 'name="wrong"') : body,
+		(url, body) =>
+			url.pathname === '/catalog' && url.searchParams.get('page') === '2'
+				? body.replaceAll('href="/catalog?', 'href="/catalog?page=2&amp;')
+				: body,
+	];
+	for (const mutate of mutations) {
+		const fixture = filterFixture(fixtureFetch([]));
+		const result = await runSmoke({
+			base: BASE,
+			expectLegacyFilters: true,
+			fetcher: async (target, init) => {
+				const response = await fixture(target, init);
+				if (init.method !== 'GET') return response;
+				return new Response(mutate(new URL(target), await response.text()), { status: response.status, headers: response.headers });
+			},
+		});
+		assert.equal(result.checks.find((c) => c.name === 'recorded-legacy-filter-contract').ok, false, `Missed mutation: ${mutate}`);
+		assert.equal(result.ok, false);
+		assert.ok(!JSON.stringify(result).includes('Fixture & policy'), 'Diagnostics must not print response bodies');
+	}
 });
 
 test('smoke rejects bot cookies by default and accepts only an explicit named edge-cookie opt-in', async () => {

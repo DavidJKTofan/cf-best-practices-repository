@@ -1,5 +1,7 @@
 # Phase 5: curated expansion
 
+> Historical local milestone below. Runbook-aware readers and registry labels subsequently deployed in the [initial scoped release](../rollout-2026-10-31.md); all four authored starters remain disposable, with no native production publication. Private-copy rehearsal, tooling remediation and anonymous cache/read checks have later evidence. Independent content/security review, compatible exact-artifact recovery, staging/authenticated/purge journeys and publication approvals remain open; see [current v1.1 status](../rollout-2026-10-31-v1.1.md) and the [roadmap](../cloudflare-platform-roadmap.md).
+
 **Status:** implemented and verified locally on 2026-10-30; not staged, published to production or deployed. Owner directed Phase 5 after local Phases 0–4. The [roadmap](../cloudflare-platform-roadmap.md) is the resume checkpoint. Independent review, current private production-copy rehearsal, dependency remediation, live-cache/Access verification and release approvals remain open.
 
 ## Individual audit, not automatic conversion

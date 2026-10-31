@@ -15,6 +15,7 @@ test('release HTTP probes exercise the actual built Worker and refuse to certify
 			nativeId: entry.practiceId,
 			expectedRevision: entry.revisionId,
 			expectCacheHits: true,
+			expectLegacyFilters: true,
 			fetcher: (target, init) => {
 				const url = new URL(target);
 				return server.fetch(url.pathname + url.search, init);

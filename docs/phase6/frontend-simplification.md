@@ -1,5 +1,7 @@
 # Frontend simplification — local only
 
+> Historical local milestone below. The [initial scoped release](../rollout-2026-10-31.md) subsequently deployed this layout; [v1.1](../rollout-2026-10-31-v1.1.md) deployed the [recorded-filter follow-up](filter-restoration.md). Original local browser evidence remains distinct from targeted production checks and complete accessibility/cross-browser certification. No further release is authorized by this record.
+
 ## Scope and direction
 
 Owner-requested on 2026-10-30: restore the earlier simple, clean reference style while retaining the locally implemented Astro/catalog features. This does not authorize deployment, publication, data changes, or security-policy changes.

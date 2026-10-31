@@ -1,6 +1,6 @@
 # Recorded practice filters and scannable labels
 
-**2026-10-31 — local only, uncommitted and not deployed.** The owner reported that the Astro redesign lost useful discovery controls and requested rounded color-coded labels with a legend. Production remains the separately approved [scoped release](../rollout-2026-10-31.md); no additional deployment, remote write, role, publication or security change was performed.
+**2026-10-31 — committed as `53e1f32` and deployed by the existing `main` push integration.** Read-only inspection confirms version `c24694a9-f6e1-42e6-8358-55f1fb7e5cb5` serves 100% traffic. See the [v1.1 deployment/read evidence](../rollout-2026-10-31-v1.1.md), which supersedes this document's original local-only status without extending the [initial scoped release approval](../rollout-2026-10-31.md). No deployment, remote database write, role, publication or security change was performed by this verification.
 
 ## Usability and compatibility
 
@@ -20,7 +20,7 @@ Summary/detail `legacyClassification` contains `domain`, `categoryId`, `category
 
 OpenAPI, API docs, the generated agent index, read skill/digest and optional read-only WebMCP describe the additive filters. Markdown listings include recorded labels alongside the same bounded summaries.
 
-## Verification and limits
+## Original local verification and limits
 
 - Runtime **225/225**, rebuilt frontend **37/37**, strict TypeScript, **7 boundary + 3 discovery**, content integrity/four ordinary patches twice/**5 + 5 Python**, synthetic release **9 Python + 9 Node**, generated binding types, clean Astro check/build, generated-config deploy dry run and `git diff --check` pass. Skill digest matches the served Markdown bytes. The existing Node test-runner module-type warning is unchanged; no dependency/configuration changes were needed.
 - Chrome checked **40 script-enabled combinations**: unfiltered and filtered catalog, legacy reading and typed code reading; **20 script-blocked combinations**: catalog and typed code reading. Actual CSS viewports 320, 390, 768, 1440 and 3840px, both themes. No horizontal overflow; 4K listing/reading widths remain 1440/1120px.
@@ -30,4 +30,8 @@ OpenAPI, API docs, the generated agent index, read skill/digest and optional rea
 - Fresh final-build preview: practice 18 retains its Domain/Category/Feature labels and complete reading sections; its existing copy control reports **“Expression copied.”** No code/copy implementation changed.
 - One cold, unthrottled local catalog trace: **LCP 66 ms, TTFB 11 ms, CLS 0.00**; normal script/style/document requests returned 200 with no warning/error console messages. Render-blocking savings were 0 ms. Not a production, field, expanded-catalog or load benchmark.
 
-Independent review, cross-browser/screen-reader certification and fresh production verification remain open. Existing release limits (staging, exact-artifact recovery, authenticated production mutations/retries and purge propagation) are unchanged. Review this local follow-up and obtain explicit approval before commit/push/deployment; no D1 migration or data patch is required for these controls.
+## Subsequent production verification
+
+The [v1.1 review](../rollout-2026-10-31-v1.1.md) confirms the six live controls, public classification/facet/count/Markdown parity, normalization/selected-empty links and independent cache variants. The local smoke CLI now supports `--expect-legacy-filters`; all **10 groups** pass against the existing production version when HIT checks are requested. Its synthetic and actual built-Worker regressions are separate from live evidence. No D1 migration, data patch or new Worker deployment is needed to run the probe.
+
+Independent review, cross-browser/screen-reader certification and the existing staging, exact-artifact recovery, authenticated production mutation/retry and purge-propagation limits remain open. Follow the [operational acceptance checklist](operational-acceptance.md) for ownership, recovery provenance and monitoring sign-off. New documentation/probe changes remain local; obtain explicit approval before any later commit/push/deployment or remote change.

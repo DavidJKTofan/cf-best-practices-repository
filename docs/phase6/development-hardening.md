@@ -1,5 +1,7 @@
 # Post-roadmap local development hardening
 
+> Historical local milestone below. The [initial scoped release](../rollout-2026-10-31.md) subsequently deployed the search fix after fresh private-copy rehearsal; the live long-search probe passes. See [current v1.1 evidence](../rollout-2026-10-31-v1.1.md) and [operational acceptance](operational-acceptance.md) for remaining independent-review, staging, recovery and authenticated/purge gates. Clean audits do not close those gates.
+
 **Status: completed locally on 2026-10-30, not deployed.** After local Phases 0–6 tooling, the owner requested remaining relevant development. This addresses two recorded blockers without treating development direction as rollout approval. The [roadmap](../cloudflare-platform-roadmap.md) and [release runbook](rehearsal-and-rollout.md) retain the private-copy, independent review, staging and live gates.
 
 ## v1 literal search correction

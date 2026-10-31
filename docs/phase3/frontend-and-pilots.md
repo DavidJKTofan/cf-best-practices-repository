@@ -1,5 +1,7 @@
 # Phase 3: Astro field guide and end-to-end pilots
 
+> Historical local milestone below. The [initial scoped release](../rollout-2026-10-31.md) subsequently deployed these readers after private-copy rehearsal; [v1.1](../rollout-2026-10-31-v1.1.md) adds restored filters. Pilots remain disposable fixtures, not native production publications. Independent review, staging/signed Access, exact-artifact recovery and authenticated purge gates remain open; use the [roadmap](../cloudflare-platform-roadmap.md) for current status.
+
 **Status:** completed and verified locally on 2026-10-30. Not staged, published, or deployed. Owner authorized Phase 3 development after local Phases 0–2; that does not authorize remote changes. The [roadmap](../cloudflare-platform-roadmap.md) is the handoff checkpoint.
 
 ## Integration and ownership

@@ -1,5 +1,7 @@
 # Phase 4: safe editorial authoring
 
+> Historical local milestone below. The [initial scoped release](../rollout-2026-10-31.md) subsequently applied 0006–0007 and deployed these handlers after private-copy rehearsal; no live roles or native publications were provisioned. Dependency hardening/anonymous reads have later evidence, not independent acceptance. See [current v1.1 status](../rollout-2026-10-31-v1.1.md) and [operational gates](../phase6/operational-acceptance.md) for the remaining review, staging, recovery and authenticated mutation/purge work.
+
 **Status:** implemented and verified locally on 2026-10-30; not staged or deployed. Owner directed Phase 4 development after local Phases 0–3. No commit, push, remote data write, live role grant, deployment, or Access/security-policy change is authorized. The [roadmap](../cloudflare-platform-roadmap.md) is the resume checkpoint. Earlier independent review, dependency audit, current private production-copy rehearsal and live-cache/Access gates remain open.
 
 ## Boundaries and implementation

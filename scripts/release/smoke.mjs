@@ -5,6 +5,8 @@ import { parseArgs } from 'node:util';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parse } from 'parse5';
+import { elements, attr, text } from './markup.mjs';
+import { verifyLegacyFilters } from './legacy-filters.mjs';
 
 function origin(value) {
 	const url = new URL(value);
@@ -18,18 +20,6 @@ function id(value) {
 	assert.ok(Number.isSafeInteger(Number(value)) && Number(value) <= 2147483647);
 	return Number(value);
 }
-
-function elements(html) {
-	const nodes = [];
-	function visit(node) {
-		if (node.tagName) nodes.push(node);
-		for (const child of node.childNodes ?? []) visit(child);
-	}
-	visit(parse(html));
-	return nodes;
-}
-const attr = (node, name) => node.attrs?.find((a) => a.name === name)?.value;
-const text = (node) => (node.nodeName === '#text' ? node.value : (node.childNodes ?? []).map(text).join(''));
 
 async function boundedBody(response, maxBytes) {
 	if (!response.body) return '';
@@ -60,6 +50,7 @@ export async function runSmoke({
 	nativeId,
 	expectedRevision,
 	expectCacheHits = false,
+	expectLegacyFilters = false,
 	allowCloudflareBmCookie = false,
 	fetcher = fetch,
 	maxBytes = 2 * 1024 * 1024,
@@ -72,6 +63,7 @@ export async function runSmoke({
 	if (expectedRevision !== undefined) expectedRevision = id(expectedRevision);
 	assert.ok(Number.isSafeInteger(maxBytes) && maxBytes > 0);
 	assert.equal(typeof allowCloudflareBmCookie, 'boolean');
+	assert.equal(typeof expectLegacyFilters, 'boolean');
 	const checks = [];
 	async function check(name, action) {
 		try {
@@ -180,6 +172,7 @@ export async function runSmoke({
 			assert.equal(entry.practiceId, nativeId);
 			assert.equal(entry.revisionId, expectedRevision);
 			assert.equal(entry.schemaVersion, 1);
+			if (expectLegacyFilters) assert.equal(entry.legacyClassification, null, 'Native entries must not inherit legacy classification');
 			const html = await document(path, 'text/html', 'text/html');
 			const markdown = await document(path, 'text/markdown', 'text/markdown');
 			assert.equal(text(elements(html.body).find((n) => n.tagName === 'h1')), entry.title);
@@ -190,6 +183,8 @@ export async function runSmoke({
 			publicResponse(alias, 'text/markdown');
 			assert.equal(alias.body, markdown.body);
 		});
+	if (expectLegacyFilters)
+		await check('recorded-legacy-filter-contract', () => verifyLegacyFilters({ request, publicResponse, document, legacyId }));
 	await check('published-discovery-and-skill-digest', async () => {
 		const sitemap = await request('/sitemap.xml');
 		publicResponse(sitemap, 'application/xml');
@@ -241,6 +236,7 @@ export async function runSmoke({
 		ok: checks.every((c) => c.ok),
 		checks,
 		cacheHitsRequired: expectCacheHits,
+		legacyFiltersRequired: expectLegacyFilters,
 		responseCookiePolicy: allowCloudflareBmCookie ? '__cf_bm-only' : 'none',
 		remoteWrites: 'none',
 		notVerified: [
@@ -263,6 +259,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
 				'native-id': { type: 'string' },
 				'expected-revision': { type: 'string' },
 				'expect-cache-hits': { type: 'boolean' },
+				'expect-legacy-filters': { type: 'boolean' },
 				'allow-cloudflare-bm-cookie': { type: 'boolean' },
 			},
 		});
@@ -274,13 +271,14 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
 			nativeId: values['native-id'],
 			expectedRevision: values['expected-revision'],
 			expectCacheHits: values['expect-cache-hits'] ?? false,
+			expectLegacyFilters: values['expect-legacy-filters'] ?? false,
 			allowCloudflareBmCookie: values['allow-cloudflare-bm-cookie'] ?? false,
 		});
 		console.log(JSON.stringify(result, null, 2));
 		if (!result.ok) process.exitCode = 1;
 	} catch {
 		console.error(
-			'FAIL read-only smoke check. Supply an approved HTTPS --base; optional --canonical, --native-id plus --expected-revision, --expect-cache-hits, --allow-cloudflare-bm-cookie. No writes performed.',
+			'FAIL read-only smoke check. Supply an approved HTTPS --base; optional --canonical, --native-id plus --expected-revision, --expect-cache-hits, --expect-legacy-filters, --allow-cloudflare-bm-cookie. No writes performed.',
 		);
 		process.exitCode = 1;
 	}
