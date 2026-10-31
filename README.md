@@ -2,9 +2,11 @@
 
 A sourced repository of Cloudflare recommendations, architectures, and implementation patterns, built on Cloudflare Workers and D1. Existing Layer 7 practice IDs and APIs are preserved.
 
-**Local development checkpoint:** Phases 1–5 are implemented locally, not deployed. Phase 6 adds offline rehearsal, isolated staging-build checks and read-only release probes; an approved current private copy now passes offline/local D1/workerd rehearsal, while independent-review/exact-artifact/staging/live gates remain open. The Astro frontend, role-protected editorial workflow, and four curated Cloudflare One/Developer starters are verified with disposable fixtures. All 119 legacy records have an individual classification audit, not an automatic conversion. No native starter/pilot or role grant has been added to production or its seed. See the [roadmap](docs/cloudflare-platform-roadmap.md), [Phase 5 evidence/release limits](docs/phase5/curated-expansion.md) and [Phase 6 release runbook](docs/phase6/rehearsal-and-rollout.md).
+**Production checkpoint — 2026-10-31:** the owner-approved scoped release deployed the Astro frontend/v2 reads from `b9bf6a3`, after production migrations 0006–0007 and ordinary patches. Workers Builds now builds Astro before deploying its generated configuration. Production retains **119 legacy/published practices**, with no native revisions, drafts or role grants. Live search/filter/sort/pagination, representations, discovery, anonymous dashboard denial and separate HTML/Markdown cache hits pass. Independent review, staging, exact-artifact recovery and authenticated mutation/purge testing remain outstanding, explicitly accepted for this scoped release—not completed gates. Pilots and four curated starters remain disposable local fixtures. See the [rollout evidence](docs/rollout-2026-10-31.md), [roadmap](docs/cloudflare-platform-roadmap.md) and [release runbook](docs/phase6/rehearsal-and-rollout.md).
 
 ## Features
+
+**Local UX follow-up (not deployed):** restores Category, Feature, Domain, Level, Impact and Difficulty filters, rounded Domain-color labels/legend, neutral Category/Feature pills and removable filter chips. These use recorded practice data without inferring native taxonomy or changing the database. See [filter restoration and verification](docs/phase6/filter-restoration.md); production remains the release above.
 
 - Server-rendered `/catalog` search, conjunctive filters, sorting, and pagination (20 summaries by default, maximum 50), using ordinary GET forms with progressive debounced search/immediate filters
 - Populated family/outcome journeys, shareable effective query state, and canonical practice URLs (`/practices/<id>`; old `/#practice-<id>` bookmarks remain usable)
@@ -18,18 +20,18 @@ A sourced repository of Cloudflare recommendations, architectures, and implement
 
 ### Frontend design
 
-The local Astro frontend follows the earlier UI's neutral palette, compact typography, subtle borders and simple result rows. It uses the system font stacks below, with no downloaded fonts:
+The Astro frontend follows the earlier UI's neutral palette, compact typography, subtle borders and simple result rows. It uses the system font stacks below, with no downloaded fonts:
 
 ```css
 --font: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
 ```
 
-Layouts adapt from mobile/tablet to desktop and 4K, with bounded listing/reading widths rather than monitor-wide prose. Extra filters and small-screen contents are collapsible. Empty configuration, notes, related-content, family/outcome and unused filter sections are omitted from server HTML, including their headings and contents links; selected zero-result filters stay available to clear. Sources, caveats, canonical links and honest freshness metadata are preserved. See the [local UI verification](docs/phase6/frontend-simplification.md); this redesign is **not deployed**.
+Layouts adapt from mobile/tablet to desktop and 4K, with bounded listing/reading widths rather than monitor-wide prose. Recorded practice filters are visible; additional native taxonomy/type/sort controls and small-screen contents are collapsible. Domain pills retain the earlier Security/red, Performance/blue, Reliability/green and General/gray palette with text labels and a legend; Category/Feature pills stay neutral. Empty configuration, notes, related-content, family/outcome and unused filter sections are omitted from server HTML, including their headings and contents links; selected zero-result filters stay available to clear individually. Sources, caveats, canonical links and honest freshness metadata are preserved. See the [local UI verification](docs/phase6/frontend-simplification.md), [filter follow-up](docs/phase6/filter-restoration.md) and separate [production checks](docs/rollout-2026-10-31.md).
 
 Keep this README and [AGENTS.md](AGENTS.md) up to date when changing setup, behavior or design rules.
 
-Catalog/family text search applies after 350 ms; dropdowns apply immediately. URLs, Back/Forward, focus and native no-JavaScript Search remain usable; failed live updates fall back to ordinary navigation. Pagination bounds response size, not substring-search/count/deep-offset cost. See the [scalability and production-readiness review](docs/phase6/scalability-and-production-readiness.md): a current private-copy migration/runtime rehearsal passes locally, but independent-review/staging/live gates remain open and production still lacks `/catalog` and v2.
+Catalog/family text search applies after 350 ms; dropdowns apply immediately. URLs, Back/Forward, focus and native no-JavaScript Search remain usable; failed live updates fall back to ordinary navigation. Pagination bounds response size, not substring-search/count/deep-offset cost. See the [pre-release scalability review](docs/phase6/scalability-and-production-readiness.md) and [production evidence](docs/rollout-2026-10-31.md). Legacy records retain their recorded classifications but have no native taxonomy: empty family/product/outcome filters and hubs are intentionally absent, not automatically populated from feature names.
 
 ## Architecture
 
@@ -90,6 +92,18 @@ npm run db:seed:refresh -- /path/outside/repository/full.sql
 
 After changing bindings in `wrangler.jsonc`, run `npm run cf-typegen`. `npm run deploy` builds first and deploys the generated configuration; it still requires explicit approval and the release gates above.
 
+### Workers Builds (Git integration)
+
+Configure the Worker's **Settings → Builds** separately from the repository's Wrangler source configuration:
+
+| Setting        | Value                                                    |
+| -------------- | -------------------------------------------------------- |
+| Build command  | `npm run build`                                          |
+| Deploy command | `npx wrangler deploy --config dist/server/wrangler.json` |
+| Root directory | Repository root                                          |
+
+The default deploy command alone, `npx wrangler deploy`, fails on a clean checkout because `src/astro-worker.ts` imports Astro virtual modules that must first be compiled by Astro. Do not add fake aliases for those modules or point deployment at raw source. For a single combined local deploy command, use `npm run deploy`. The Git build settings above are stored in Cloudflare, not inferred from npm scripts. Pending D1 migrations and approved registry/content patches are separate reviewed operations; do not add automatic remote migrations, seed writes or publication to Builds or credential-free CI.
+
 To inspect all three pilots without touching your normal local database or any remote resource:
 
 ```bash
@@ -106,9 +120,9 @@ For the two Phase 5 implementation/recovery pairs instead of the pilots, run `np
 
 ### Phase 6 release preparation
 
-The [rehearsal and rollout runbook](docs/phase6/rehearsal-and-rollout.md) separates local tooling from actual approvals/live evidence. `release:rehearse` requires an approved full export, consistent allocator capture, verified schema baseline and a new private output directory; it never contacts Cloudflare or refreshes the public seed. `CF_STAGING_CONFIG` accepts only a validated private isolated configuration and builds into `dist-staging/`; ordinary build/deploy commands remain production-targeted and still need approval. `release:smoke` requires an explicit approved HTTPS target and uses anonymous read methods only. An approved current private copy has now passed offline and isolated local D1/workerd rehearsal; exact-deployed-artifact rollback, independent review, staging and live Access/cache/purge/browser gates remain open. Production is still on migration 0005; no remote mutation/deployment occurred in that review.
+The [rehearsal and rollout runbook](docs/phase6/rehearsal-and-rollout.md) separates local tooling from actual approvals/live evidence. `release:rehearse` requires an approved full export, consistent allocator capture, verified schema baseline and a new private output directory; it never contacts Cloudflare or refreshes the public seed. `CF_STAGING_CONFIG` accepts only a validated private isolated configuration and builds into `dist-staging/`; ordinary build/deploy commands remain production-targeted and still need approval. `release:smoke` requires an explicit approved HTTPS target and uses anonymous read methods only. Its default rejects response cookies; `--allow-cloudflare-bm-cookie` explicitly permits only the documented edge `__cf_bm` cookie, never application cookies or credential forwarding. The scoped [2026-10-31 release](docs/rollout-2026-10-31.md) followed refreshed private-copy rehearsals and deployed schema 0007. Independent review, staging, exact-artifact recovery, authenticated mutations/retries and purge propagation remain unverified; no staging resources, live grants or native publication were authorized.
 
-[Post-roadmap local hardening](docs/phase6/development-hardening.md) corrects the recorded v1 long-search HTTP 500 without changing its normalization or searchable fields. Targeted patched Wrangler/Vitest/plugin updates also remove the recorded audit findings: the app and isolated prototype currently pass full and production-only audits with zero reported vulnerabilities. These changes are verified locally, not deployed; clean audits do not replace independent review or release approval.
+[Post-roadmap hardening](docs/phase6/development-hardening.md) corrects the recorded v1 long-search HTTP 500 without changing its normalization or searchable fields; a production 200-character search now passes. Targeted patched Wrangler/Vitest/plugin updates also remove the recorded audit findings: the app and isolated prototype passed full and production-only audits with zero reported vulnerabilities. Clean audits do not replace independent review or release approval.
 
 ### Durable creation upgrade
 
@@ -135,7 +149,7 @@ The [2026-10-22 rollout verification](docs/frontend-rollout-2026-10-22.md) recor
 
 ## API
 
-**Local additions, not deployed:** `GET /api/v2/entries` returns paginated published summaries; `/api/v2/entries/{id}` returns selective details; `/api/v2/facets` returns populated conjunctive counts. See [the contract and release gates](docs/phase2/model-and-read-api.md) and [v2 OpenAPI](public/openapi-v2.json). Imported practices retain IDs and use a schema-version-0 adapter without invented taxonomy, maturity or verification dates. Published typed entries have HTML/Markdown canonical pages and join full exports, but remain excluded from v1. [Phase 4](docs/phase4/editorial-workflow.md) adds `/dashboard/editorial` and protected `/dashboard/api/catalog…` draft/review/publication routes with explicit private roles, optimistic versions and durable mutation receipts. No live grants or publications are implied; see [editorial OpenAPI](public/openapi-editorial.json).
+**Deployed public reads:** `GET /api/v2/entries` returns paginated published summaries; `/api/v2/entries/{id}` returns selective details; `/api/v2/facets` returns populated conjunctive counts. See [the contract and release gates](docs/phase2/model-and-read-api.md) and [v2 OpenAPI](public/openapi-v2.json). Imported practices retain IDs and use a schema-version-0 adapter without invented taxonomy, maturity or verification dates. Published typed entries have HTML/Markdown canonical pages and join full exports, but remain excluded from v1. [Phase 4](docs/phase4/editorial-workflow.md) adds `/dashboard/editorial` and protected `/dashboard/api/catalog…` draft/review/publication routes with explicit private roles, optimistic versions and durable mutation receipts. These handlers are deployed but have **no production role grants or native publications**; authenticated live workflow testing remains separately gated. See [editorial OpenAPI](public/openapi-editorial.json).
 
 | Endpoint                           | Description                                                                                         |
 | ---------------------------------- | --------------------------------------------------------------------------------------------------- |

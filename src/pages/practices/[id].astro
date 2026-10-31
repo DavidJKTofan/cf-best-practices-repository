@@ -3,6 +3,7 @@ import { env } from 'cloudflare:workers';
 import FieldGuide from '../../layouts/FieldGuide.astro';
 import ReadingSections from '../../components/content/ReadingSections.astro';
 import EntrySummary from '../../components/catalog/EntrySummary.astro';
+import EntryLabels from '../../components/catalog/EntryLabels.astro';
 import { getCatalogEntry, listCatalog } from '../../modules/catalog/v2-queries';
 import { readingSections, TYPE_LABELS } from '../../content/presentation';
 import { SITE_URL, modifiedDate, safeUrl } from '../../content-rendering';
@@ -94,6 +95,7 @@ const title = status === 404 ? 'Guidance not found' : status === 503 ? 'Guidance
 					{entry.revisionId && ` / Revision ${entry.revisionId}`}
 				</p>
 				<h1>{entry.title}</h1>
+				<EntryLabels entry={entry} />
 				{entry.lifecycle.state !== 'active' && (
 					<aside class="empty-state" aria-label="Publication status">
 						<strong>{entry.lifecycle.state === 'superseded' ? 'Superseded guidance' : 'Deprecated guidance'}</strong>

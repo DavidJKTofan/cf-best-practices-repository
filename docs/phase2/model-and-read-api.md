@@ -6,6 +6,8 @@
 
 ## Model and compatibility decisions
 
+**2026-10-31 local additive follow-up:** v2 now exposes recorded practice discovery (`categoryId`, `featureId`, `domain`, `level`, `impact`, `difficulty`), summary/detail `legacyClassification` and `data.legacy` facet groups. These read-time published-legacy joins restore omitted UI controls without migrations, v1 changes or inferred native taxonomy. See [contract and local evidence](../phase6/filter-restoration.md); this follow-up is not deployed.
+
 Migration `0006_catalog_model.sql` is additive: no legacy table rebuild, column removal, receipt rewrite, or practice-ID change.
 
 | Entity                               | Authority and public visibility                                                                                                      |

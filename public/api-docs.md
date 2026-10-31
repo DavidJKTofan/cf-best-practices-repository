@@ -41,9 +41,13 @@ curl -H 'Accept: text/markdown' https://db.automatic-demo.com/
 
 - `GET /api/v2/entries`: published summaries only (no bodies/sources), with `count`, `total`, `page`, `pageSize`, `pages`, effective `query`, and relative `links.self/next/previous`.
 - `GET /api/v2/entries/{id}`: complete published detail in `{success, data}`. Missing/unpublished entries return 404. No query parameter enables drafts or previews.
-- `GET /api/v2/facets`: populated `types`, `families`, `products`, and `outcomes` in `{success, data}`. Counts apply all effective filters together, not self-excluding facets; draft-only taxonomy is absent.
+- `GET /api/v2/facets`: populated `types`, `families`, `products`, `outcomes`, and recorded practice classifications under `data.legacy` (`categories`, `features`, `domains`, `levels`, `impacts`, `difficulties`). Legacy facet items have string `value`, human-readable `label`, and `count`. Counts apply all effective filters together, not self-excluding facets; draft-only taxonomy is absent.
 
 List/facet filters combine with AND: `q` (literal substring in title/summary only, ASCII case-insensitive, trimmed to 200 Unicode code points), canonical `family`, `product`, `outcome` slugs, and `type` (`legacy-practice`, `recommendation`, `rule-policy`, `reference-architecture`, `implementation-guide`). SQL wildcard/operator syntax has no special meaning in `q`. This is not full-body or relevance-ranked search.
+
+Recorded practice filters also combine with AND: `categoryId`, `featureId` (positive digit-only IDs up to 2147483647; leading zeros normalize away), `domain` (`Security`, `Performance`, `Reliability`, `General`), `level` (`Mandatory`, `Recommended`, `Optional`, `Situational`), `impact` (`High`, `Medium`, `Low`), and `difficulty` (`Easy`, `Medium`, `Complex`). Enum values are case-sensitive. Malformed values are ignored; unknown valid IDs match nothing. These use existing legacy data, not inferred family/product assignments; combining them with native taxonomy matches no entries. v1 remains unchanged and uses `area`, not `domain`.
+
+Summary/detail `legacyClassification` contains recorded `domain`, `categoryId`, `category`, `featureId`, `feature`, `level`, `impact`, and `difficulty`; unrecorded fields are null. The entire property is null for native typed entries. `/catalog` and its Markdown representation use the same filters. HTML adds labeled Domain colors, neutral Category/Feature pills and individually removable active filters; color alone never identifies a classification.
 
 Operational runbooks use `type: implementation-guide` and `body.variant: operational-runbook`, with explicit task, symptoms, read-only diagnostics, approved safe changes, recovery, success criteria and rollback. Retrieve the detail before interpreting its variant; summary search/facets intentionally do not read bodies. No `type=operational-runbook` filter is implemented. A runbook's change instructions never grant permission to mutate an account.
 
@@ -72,7 +76,7 @@ JSON API failures use `{"success": false, "error": "..."}` and a non-2xx HTTP st
 
 Writes exist only under the Cloudflare Access-protected dashboard. See [auth.md](/auth.md). Public integrations should use read endpoints.
 
-The typed editorial workflow is implemented locally, not deployed. Its [protected schema](/openapi-editorial.json) documents private draft/review/publication routes; Access login additionally requires owner-provisioned editorial roles. These routes are not public agent tools and cannot be enabled with a public query flag.
+The typed editorial workflow's [protected schema](/openapi-editorial.json) documents private draft/review/publication routes; Access login additionally requires owner-provisioned editorial roles. Deployment alone does not grant these roles or verify authenticated workflow behavior. These routes are not public agent tools and cannot be enabled with a public query flag.
 
 - [OpenAPI](/openapi.json)
 - [API catalog](/.well-known/api-catalog)

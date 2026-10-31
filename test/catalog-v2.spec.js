@@ -408,6 +408,125 @@ describe('published-only v2 reads and compatibility', () => {
 	});
 });
 
+describe('recorded practice discovery', () => {
+	beforeAll(async () => {
+		await env.DB.batch([
+			env.DB.prepare("INSERT INTO Categories (category_id, name) VALUES (500, 'Request rules'), (501, 'Unreferenced category')"),
+			env.DB.prepare("INSERT INTO CloudflareFeatures (feature_id, name) VALUES (600, 'WAF feature'), (601, 'Unreferenced feature')"),
+			env.DB.prepare(`UPDATE BestPractices SET category_id = 500, feature_id = 600,
+				recommendation_level = 'Recommended', impact_level = 'High', difficulty_level = 'Easy' WHERE practice_id = 1`),
+		]);
+	});
+	it('normalizes all six filters identically for SQL/cache keys and drops invalid first duplicates', () => {
+		const query = 'categoryId=00500&featureId=00600&domain=Security&level=Recommended&impact=High&difficulty=Easy';
+		for (const path of ['/api/v2/entries', '/api/v2/facets']) {
+			const request = normalizeV2Request(new Request(`${ORIGIN}${path}?${query}&categoryId=501&tracking=x`));
+			expect(request.url).toBe(`${ORIGIN}${path}?${query.replace('00500', '500').replace('00600', '600')}`);
+			expect(normalizeV2Request(request).url).toBe(request.url);
+		}
+		const invalid = 'categoryId=0&categoryId=500&featureId=2147483648&domain=security&level=bad&impact=High%27&difficulty=Easy%20';
+		expect(normalizeV2Request(new Request(`${ORIGIN}/api/v2/entries?${invalid}`)).url).toBe(`${ORIGIN}/api/v2/entries`);
+		for (const value of ['-1', '1.5', '1e2', "500' OR 1=1 --", '9'.repeat(200)])
+			expect(normalizeV2Request(new Request(`${ORIGIN}/api/v2/entries?categoryId=${encodeURIComponent(value)}`)).url).toBe(
+				`${ORIGIN}/api/v2/entries`,
+			);
+	});
+	it.each([
+		['categoryId', '500'],
+		['featureId', '600'],
+		['domain', 'Security'],
+		['level', 'Recommended'],
+		['impact', 'High'],
+		['difficulty', 'Easy'],
+	])('filters recorded %s without leaking native entries or fetching bodies', async (key, value) => {
+		const body = await (await call(`/api/v2/entries?${key}=${value}`)).json();
+		const expected = key === 'level' ? [1, 1001] : [1]; // Earlier v1-creation compatibility fixture is also Recommended.
+		expect(body.total).toBe(expected.length);
+		expect(body.data.map((row) => row.practiceId).sort((a, b) => a - b)).toEqual(expected);
+		expect(body.data[0]).not.toHaveProperty('body');
+		expect(body.data[0]).not.toHaveProperty('sources');
+		expect(body.data[0].families).toEqual([]);
+	});
+	it('combines all filters and reports only matching legacy facets with string IDs and exact counts', async () => {
+		const query =
+			'q=Legacy&type=legacy-practice&categoryId=500&featureId=600&domain=Security&level=Recommended&impact=High&difficulty=Easy';
+		const body = await (await call(`/api/v2/entries?${query}`)).json();
+		expect(body.total).toBe(1);
+		const facets = (await (await call(`/api/v2/facets?${query}&page=99&sort=newest`)).json()).data;
+		expect(facets.legacy).toEqual({
+			categories: [{ value: '500', label: 'Request rules', count: 1 }],
+			features: [{ value: '600', label: 'WAF feature', count: 1 }],
+			domains: [{ value: 'Security', label: 'Security', count: 1 }],
+			levels: [{ value: 'Recommended', label: 'Recommended', count: 1 }],
+			impacts: [{ value: 'High', label: 'High', count: 1 }],
+			difficulties: [{ value: 'Easy', label: 'Easy', count: 1 }],
+		});
+		expect(facets.families).toEqual([]);
+		expect(facets.products).toEqual([]);
+		expect(JSON.stringify(facets)).not.toContain('Unreferenced');
+		for (const extra of ['&impact=Low', '&family=cloudflare-one', '&product=waf', '&categoryId=501']) {
+			// Replace rather than append: the first duplicate intentionally wins.
+			const p = new URLSearchParams(query);
+			for (const [key, value] of new URLSearchParams(extra.slice(1))) p.set(key, value);
+			expect((await (await call(`/api/v2/entries?${p}`)).json()).total).toBe(0);
+		}
+	});
+	it('projects recorded classification consistently in summary/detail and leaves native metadata null', async () => {
+		const summary = (await (await call('/api/v2/entries?categoryId=500')).json()).data[0];
+		const detail = (await (await call('/api/v2/entries/1')).json()).data;
+		expect(summary.legacyClassification).toEqual({
+			domain: 'Security',
+			categoryId: 500,
+			category: 'Request rules',
+			featureId: 600,
+			feature: 'WAF feature',
+			level: 'Recommended',
+			impact: 'High',
+			difficulty: 'Easy',
+		});
+		expect(detail.legacyClassification).toEqual(summary.legacyClassification);
+		const native = (await (await call('/api/v2/entries?type=recommendation')).json()).data;
+		expect(native.every((row) => row.legacyClassification === null)).toBe(true);
+		expect((await (await call('/api/v2/entries/100')).json()).data.legacyClassification).toBeNull();
+		const facets = (await (await call('/api/v2/facets?type=recommendation')).json()).data;
+		expect(Object.values(facets.legacy).every((rows) => rows.length === 0)).toBe(true);
+		const legacy = (await (await call('/api/practices')).json()).data[0];
+		expect(legacy).not.toHaveProperty('legacyClassification');
+	});
+	it('preserves nulls, omits unused registry labels, and returns empty facets for unknown valid IDs', async () => {
+		const detail = (await (await call('/api/v2/entries/2')).json()).data;
+		expect(detail.legacyClassification.categoryId).toBeNull();
+		expect(detail.legacyClassification.difficulty).toBeNull();
+		for (const key of ['categoryId', 'featureId']) {
+			expect((await (await call(`/api/v2/entries?${key}=2147483647`)).json()).total).toBe(0);
+			const facets = (await (await call(`/api/v2/facets?${key}=2147483647`)).json()).data;
+			expect(Object.values(facets.legacy).flat()).toEqual([]);
+			expect(facets.types).toEqual([]);
+		}
+	});
+	it('keeps filtered pages bounded, complete and linked with all effective filters', async () => {
+		await env.DB.batch(
+			Array.from({ length: 55 }, (_, i) =>
+				env.DB.prepare(
+					`INSERT INTO BestPractices
+			(practice_id, title, description, domain, category_id, feature_id, recommendation_level, impact_level, difficulty_level)
+			VALUES (?, ?, 'Summary only', 'Security', 500, 600, 'Recommended', 'High', 'Easy')`,
+				).bind(2000 + i, `Page fixture ${i}`),
+			),
+		);
+		const query = 'categoryId=500&featureId=600&domain=Security&level=Recommended&impact=High&difficulty=Easy';
+		const first = await (await call(`/api/v2/entries?${query}&pageSize=999`)).json();
+		expect(first).toMatchObject({ total: 56, count: 50, pageSize: 50, pages: 2 });
+		expect(first.links.next).toBe(`/api/v2/entries?${query}&page=2&pageSize=50`);
+		const second = await (await call(first.links.next)).json();
+		expect(second.count).toBe(6);
+		expect(second.links.next).toBeNull();
+		expect(new Set([...first.data, ...second.data].map((r) => r.practiceId)).size).toBe(56);
+		const facets = (await (await call(`/api/v2/facets?${query}&page=2&pageSize=1`)).json()).data.legacy;
+		expect(facets.domains[0].count).toBe(56);
+	});
+});
+
 describe('publication storage invariants', () => {
 	it('requires a publication of the same entry before setting a public pointer', async () => {
 		const row = await env.DB.prepare('SELECT revision_id FROM CatalogRevisions WHERE practice_id = 200').first();

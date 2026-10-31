@@ -1,4 +1,5 @@
 import { catalogSummary, type CatalogRow } from './v2-projection';
+import { CATALOG_COLUMNS, CATALOG_FROM } from './legacy-discovery';
 
 // Editorial reading order, not another body authority or a production ID allocator.
 // Exact reviewed titles + family select only active PublishedCatalog summaries.
@@ -26,8 +27,8 @@ export async function starterCollection(db: D1DatabaseSession, family: string) {
 	const collection = COLLECTIONS[family];
 	const rows = await db
 		.prepare(
-			`SELECT * FROM PublishedCatalog WHERE schema_version = 1 AND content_type = 'implementation-guide' AND primary_family = ?
-		AND json_extract(lifecycle_json, '$.state') = 'active' AND title IN (?, ?) LIMIT 3`,
+			`SELECT ${CATALOG_COLUMNS} FROM ${CATALOG_FROM} WHERE v.schema_version = 1 AND v.content_type = 'implementation-guide' AND v.primary_family = ?
+		AND json_extract(v.lifecycle_json, '$.state') = 'active' AND v.title IN (?, ?) LIMIT 3`,
 		)
 		.bind(family, ...collection.entries.map((entry) => entry.title))
 		.all<CatalogRow>();

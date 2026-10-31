@@ -1,6 +1,7 @@
 ---
 import type { CatalogSummary } from '../../modules/catalog/v2-projection';
 import { TYPE_LABELS } from '../../content/presentation';
+import EntryLabels from './EntryLabels.astro';
 interface Props {
 	entry: CatalogSummary;
 	headingLevel?: 'h2' | 'h3';
@@ -15,10 +16,27 @@ const { entry, headingLevel: Heading = 'h2' } = Astro.props;
 			{TYPE_LABELS[entry.type] ?? entry.type}
 			{entry.products.length > 0 && <span> / {entry.products.join(' + ')}</span>}
 		</p>
+		<EntryLabels entry={entry} />
 		<Heading class="entry-title">
 			<a href={entry.canonicalPath}>{entry.title}</a>
 		</Heading>
 		<p>{entry.summary}</p>
+		{entry.legacyClassification &&
+			[entry.legacyClassification.level, entry.legacyClassification.impact, entry.legacyClassification.difficulty].some(Boolean) && (
+				<p class="entry-ratings">
+					{[
+						['Level', entry.legacyClassification.level],
+						['Impact', entry.legacyClassification.impact],
+						['Difficulty', entry.legacyClassification.difficulty],
+					]
+						.filter(([, value]) => value)
+						.map(([label, value]) => (
+							<span>
+								<span class="rating-label">{label}:</span> {value}
+							</span>
+						))}
+				</p>
+			)}
 		<p class="entry-meta">
 			{entry.schemaVersion === 0
 				? 'Legacy import · Applicability and fact review not classified'

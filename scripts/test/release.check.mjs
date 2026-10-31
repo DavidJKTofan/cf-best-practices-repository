@@ -108,7 +108,7 @@ test('generated staging check requires built paths and refuses public server map
 
 const BASE = 'https://catalog.example.com';
 const skillBody = '# Read practices\n';
-function fixtureFetch(log, { badRevision = false, redirectPublic = false, cacheHit = true, dashboardPublic = false } = {}) {
+function fixtureFetch(log, { badRevision = false, redirectPublic = false, cacheHit = true, dashboardPublic = false, cookies = [] } = {}) {
 	return async (target, init) => {
 		const url = new URL(target);
 		log.push({ target, init });
@@ -176,7 +176,9 @@ function fixtureFetch(log, { badRevision = false, redirectPublic = false, cacheH
 		}
 		if (type === 'application/json') headers['X-Robots-Tag'] = 'noindex';
 		headers['Content-Type'] = type;
-		return new Response(init.method === 'HEAD' ? null : body, { headers });
+		const response = new Response(init.method === 'HEAD' ? null : body, { headers });
+		for (const cookie of cookies) response.headers.append('Set-Cookie', cookie);
+		return response;
 	};
 }
 
@@ -185,8 +187,41 @@ test('read-only smoke verifies variants, expected revision, discovery, anonymous
 	const result = await runSmoke({ base: BASE, nativeId: 121, expectedRevision: 2, expectCacheHits: true, fetcher: fixtureFetch(log) });
 	assert.equal(result.ok, true, JSON.stringify(result));
 	assert.equal(result.remoteWrites, 'none');
+	assert.equal(result.responseCookiePolicy, 'none');
 	assert.ok(log.length > 20);
 	assert.ok(!JSON.stringify(result).includes('Published fixture'));
+});
+
+test('smoke rejects bot cookies by default and accepts only an explicit named edge-cookie opt-in', async () => {
+	const cookies = ['__cf_bm=PRIVATE_COOKIE_VALUE; HttpOnly; Secure; SameSite=None; Expires=Wed, 21 Oct 2026 07:28:00 GMT'];
+	const strict = await runSmoke({ base: BASE, fetcher: fixtureFetch([], { cookies }) });
+	assert.equal(strict.ok, false);
+	assert.equal(strict.responseCookiePolicy, 'none');
+	const log = [];
+	const allowed = await runSmoke({
+		base: BASE,
+		expectCacheHits: true,
+		allowCloudflareBmCookie: true,
+		fetcher: fixtureFetch(log, { cookies }),
+	});
+	assert.equal(allowed.ok, true, JSON.stringify(allowed));
+	assert.equal(allowed.responseCookiePolicy, '__cf_bm-only');
+	assert.ok(!JSON.stringify([strict, allowed, log]).includes('PRIVATE_COOKIE_VALUE'));
+});
+
+test('edge-cookie opt-in still rejects application, lookalike, mixed and folded cookies', async () => {
+	for (const cookies of [
+		['session=PRIVATE_COOKIE_VALUE'],
+		['__cf_bm_extra=PRIVATE_COOKIE_VALUE'],
+		['__CF_BM=PRIVATE_COOKIE_VALUE'],
+		['__cf_bm=bot', 'session=PRIVATE_COOKIE_VALUE'],
+		['__cf_bm=bot, session=PRIVATE_COOKIE_VALUE; Secure'],
+		['__cf_bm=bot; Expires=Wed, 21 Oct 2026 07:28:00 GMT, session=PRIVATE_COOKIE_VALUE'],
+	]) {
+		const result = await runSmoke({ base: BASE, allowCloudflareBmCookie: true, fetcher: fixtureFetch([], { cookies }) });
+		assert.equal(result.ok, false);
+		assert.ok(!JSON.stringify(result).includes('PRIVATE_COOKIE_VALUE'));
+	}
 });
 
 test('smoke detects stale revisions, unprotected dashboard and missing cache effects without following redirects', async () => {

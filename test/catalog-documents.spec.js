@@ -27,6 +27,17 @@ describe('catalog document state', () => {
 			expect(markdownPath(new URL(normalized.url))).toBe('/families/cloudflare-one.md?q=browser&page=2');
 		}
 	});
+	it('retains all six practice filters in HTML/Markdown state and normalizes IDs before document caching', () => {
+		const input = 'difficulty=Easy&categoryId=005&featureId=007&domain=Security&level=Recommended&impact=High&page=02&tracking=x';
+		const effective = 'categoryId=5&featureId=7&domain=Security&level=Recommended&impact=High&difficulty=Easy&page=2';
+		for (const path of ['/catalog', '/catalog.md', '/families/cloudflare-one', '/families/cloudflare-one.md']) {
+			const request = normalizeContentRequest(new Request(`${ORIGIN}${path}?${input}`));
+			expect(request.url).toBe(`${ORIGIN}${path}?${effective}`);
+			expect(normalizeContentRequest(request).url).toBe(request.url);
+			expect(documentPath(new URL(request.url))).toBe(`${path.replace(/\.md$/, '')}?${effective}`);
+			expect(markdownPath(new URL(request.url))).toBe(`${path.replace(/\.md$/, '')}.md?${effective}`);
+		}
+	});
 	it('keeps old document query stripping and normalized representation preferences', () => {
 		for (const path of ['/', '/practices/18', '/practices/18.md']) {
 			const request = normalizeContentRequest(

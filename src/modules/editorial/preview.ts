@@ -7,6 +7,7 @@ export function draftDetail(draft: Awaited<ReturnType<typeof getDraft>>) {
 	return {
 		...draft.content,
 		lifecycle: draft.lifecycle,
+		legacyClassification: null,
 		practiceId: draft.practiceId,
 		revisionId: null,
 		v1Eligible: false,

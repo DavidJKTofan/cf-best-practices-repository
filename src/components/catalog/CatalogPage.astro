@@ -2,6 +2,8 @@
 import FieldGuide from '../../layouts/FieldGuide.astro';
 import EntrySummary from './EntrySummary.astro';
 import FilterForm from './FilterForm.astro';
+import DomainLegend from './DomainLegend.astro';
+import ActiveFilters from './ActiveFilters.astro';
 import { documentPath, markdownPath } from '../../modules/catalog/document-state';
 import type { loadListingPage } from '../../modules/catalog/listing-page';
 import { catalogSearch } from '../../modules/catalog/v2-filters';
@@ -9,7 +11,7 @@ import { SITE_URL } from '../../content-rendering';
 interface Props {
 	state: Awaited<ReturnType<typeof loadListingPage>>;
 }
-const { query, family, base, familyLabel, result, facets, status, starter } = Astro.props.state;
+const { query, family, base, familyLabel, result, facets, registry, status, starter } = Astro.props.state;
 const failed = status === 503;
 const missing = status === 404;
 const pageLink = (page: number) => {
@@ -93,20 +95,15 @@ const title = missing ? 'Family not found' : familyLabel || 'Catalog';
 			<p class="visually-hidden" role="status" aria-live="polite" data-catalog-status></p>
 			<div class="catalog-grid" data-catalog-view>
 				<aside>
-					<FilterForm query={query} facets={facets} action={base} familyLocked={!!family} />
+					<FilterForm query={query} facets={facets} registry={registry} action={base} familyLocked={!!family} />
 				</aside>
 				<section aria-label="Search results" data-catalog-results>
+					<DomainLegend domains={facets.legacy.domains.length > 0 ? registry.legacy.domains : []} />
 					<p class="results-count" role="status">
 						{failed ? 'Results temporarily unavailable' : `${result?.total ?? 0} matching entries`}{' '}
 						<span>{!failed && `Page ${query.page} of ${result?.pages || 1}`}</span>
 					</p>
-					{[query.q, query.family, query.product, query.type, query.outcome].some(Boolean) && (
-						<p class="active-filters">
-							Active:{' '}
-							{[query.q && `“${query.q}”`, query.family, query.product, query.type, query.outcome].filter(Boolean).join(' / ') ||
-								'All published guidance'}
-						</p>
-					)}
+					<ActiveFilters state={Astro.props.state} />
 					{failed ? (
 						<div class="empty-state">
 							<h2>The catalog is temporarily unavailable</h2>

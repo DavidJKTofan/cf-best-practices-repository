@@ -1,5 +1,7 @@
 # Catalog scalability and production-readiness review
 
+> Historical pre-rollout evidence: the local-only checkpoint below preceded a separately approved production release. See [2026-10-31 rollout results](../rollout-2026-10-31.md) for applied 0006–0007, the successful Astro/v2 deployment and targeted live checks. The earlier scan score and 404 observations below describe the old deployment, not the new release.
+
 **Checkpoint: 2026-10-31. Local implementation and private-copy rehearsal verified; no production migration or deployment.** The owner approved a private production backup and local rehearsal while retaining independent-review/staging/live gates. No Access changes, live roles, native publication, fixture SQL, seed refresh, DNS change, commit or push occurred.
 
 ## Pagination and direct filtering

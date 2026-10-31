@@ -1,0 +1,22 @@
+---
+import type { CatalogSummary } from '../../modules/catalog/v2-projection';
+interface Props {
+	entry: CatalogSummary;
+}
+const { entry } = Astro.props;
+const classification = entry.legacyClassification;
+---
+
+{classification && (classification.domain || classification.category || classification.feature) && (
+	<div class="entry-labels" aria-label="Recorded classification">
+		{classification.domain && (
+			<span class="classification-label" data-domain={classification.domain}>
+				{classification.domain}
+			</span>
+		)}
+		{classification.category && <span class="classification-label classification-label--topic">{classification.category}</span>}
+		{classification.feature && classification.feature !== classification.category && (
+			<span class="classification-label classification-label--topic">{classification.feature}</span>
+		)}
+	</div>
+)}

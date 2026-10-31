@@ -6,7 +6,7 @@
 			"type": "skill-md",
 			"description": "Search and cite sourced Cloudflare recommendations, architectures, and implementation patterns.",
 			"url": "https://db.automatic-demo.com/.well-known/agent-skills/read-practices/SKILL.md",
-			"digest": "sha256:8d981f8d93c18b255173e846efc9278198bad282aeb7f7c0e322217e319f5019"
+			"digest": "sha256:7f8af67c00a8f990203dfb4ac42e0e74da6afdc16252c024a95cee29b4f0652a"
 		}
 	]
 }

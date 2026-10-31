@@ -154,6 +154,75 @@ test('all legacy links still render the unchanged v1 content, and practice 18 ke
 
 const attr = (node, name) => node.attrs?.find((a) => a.name === name)?.value;
 const elements = (node) => [node, ...(node.childNodes ?? []).flatMap(elements)];
+const nodeText = (node) => node.value ?? (node.childNodes ?? []).map(nodeText).join('');
+
+test('six visible practice filters match recorded data, show labels/legend and keep selected empty filters removable', async () => {
+	const { data } = await (await server.fetch('/api/practices')).json();
+	const fields = {
+		categoryId: 'category_id',
+		featureId: 'feature_id',
+		domain: 'domain',
+		level: 'recommendation_level',
+		impact: 'impact_level',
+		difficulty: 'difficulty_level',
+	};
+	const row = data.find((r) => Object.values(fields).every((field) => r[field]));
+	assert.ok(row);
+	const catalog = (await read('/catalog')).text;
+	const nodes = elements(parse(catalog));
+	const fieldset = nodes.find((n) => n.tagName === 'fieldset' && attr(n, 'class') === 'practice-filters');
+	assert.ok(fieldset, 'Practice filters are visible without opening a disclosure');
+	assert.equal(elements(fieldset).filter((n) => n.tagName === 'select').length, 6);
+	assert.match(catalog, /aria-label="Domain color legend"/);
+	assert.match(catalog, /class="classification-label" data-domain=/);
+	const query = new URLSearchParams();
+	for (const [key, field] of Object.entries(fields)) {
+		query.set(key, String(row[field]));
+		const body = await (await server.fetch(`/api/v2/entries?${key}=${encodeURIComponent(row[field])}&pageSize=50`)).json();
+		assert.equal(body.total, data.filter((r) => r[field] === row[field]).length, key);
+		assert.ok(body.data.every((r) => r.schemaVersion === 0));
+	}
+	query.set('sort', 'newest');
+	query.set('pageSize', '1');
+	query.set('page', '2');
+	const filtered = await read(`/catalog?${query}`);
+	const filteredNodes = elements(parse(filtered.text));
+	for (const [key, field] of Object.entries(fields)) {
+		const select = filteredNodes.find((n) => n.tagName === 'select' && attr(n, 'name') === key);
+		assert.ok(
+			elements(select).some((n) => n.tagName === 'option' && attr(n, 'value') === String(row[field]) && attr(n, 'selected') !== undefined),
+			key,
+		);
+	}
+	const chips = filteredNodes.filter((n) => n.tagName === 'a' && attr(n, 'aria-label')?.startsWith('Remove '));
+	assert.equal(chips.length, 6);
+	for (const chip of chips) {
+		const target = new URL(attr(chip, 'href'), 'https://catalog.example.com');
+		assert.equal(target.searchParams.has('page'), false);
+		assert.equal(target.searchParams.get('sort'), 'newest');
+		assert.equal(target.searchParams.get('pageSize'), '1');
+		assert.equal(Object.keys(fields).filter((key) => target.searchParams.has(key)).length, 5);
+	}
+	assert.ok(chips.some((n) => attr(n, 'aria-label') === `Remove Category: ${row.category_name}`));
+	const empty = await read(`/catalog?categoryId=${row.category_id}&domain=General&q=NO_SUCH_PRACTICE`);
+	assert.match(empty.text, /No matching guidance/);
+	const emptyNodes = elements(parse(empty.text));
+	const selectedCategory = emptyNodes.find(
+		(n) => n.tagName === 'option' && attr(n, 'value') === String(row.category_id) && attr(n, 'selected') !== undefined,
+	);
+	assert.equal(nodeText(selectedCategory).trim(), `${row.category_name} (0)`);
+	assert.ok(emptyNodes.some((n) => attr(n, 'aria-label') === `Remove Category: ${row.category_name}`));
+	assert.ok(!empty.text.includes('aria-label="Domain color legend"'));
+	const native = (await read('/families/cloudflare-one')).text;
+	assert.ok(!native.includes('class="practice-filters"') && !native.includes('aria-label="Domain color legend"'));
+	const reading = (await read(`/practices/${row.practice_id}`)).text;
+	assert.ok(reading.includes(`data-domain="${row.domain}"`));
+	const canonicalQuery = new URLSearchParams(query);
+	canonicalQuery.delete('page');
+	const markdown = await read(`/catalog.md?${canonicalQuery}`);
+	assert.ok(unescapeMarkdown(markdown.text).includes(row.title));
+	assert.ok(unescapeMarkdown(markdown.text).includes(`Domain: ${row.domain}`));
+});
 
 test('legacy reading sections and contents omit absent fields without duplicating headings or expression text', async () => {
 	const original = await db.prepare('SELECT * FROM BestPractices WHERE practice_id = 1').first();

@@ -1,8 +1,9 @@
 import type { Practice } from '../../practice-data';
 import { validateContent } from '../../content/validation';
 import { validateLifecycle } from '../../content/lifecycle';
+import type { LegacyColumns } from './legacy-discovery';
 
-export interface CatalogRow {
+export interface CatalogRow extends LegacyColumns {
 	practice_id: number;
 	revision_id: number | null;
 	schema_version: number;
@@ -36,6 +37,19 @@ export function catalogSummary(row: CatalogRow) {
 		title: row.title,
 		summary: row.summary,
 		lifecycle,
+		legacyClassification:
+			row.schema_version === 0
+				? {
+						domain: row.legacy_domain,
+						categoryId: row.legacy_category_id,
+						category: row.legacy_category,
+						featureId: row.legacy_feature_id,
+						feature: row.legacy_feature,
+						level: row.legacy_level,
+						impact: row.legacy_impact,
+						difficulty: row.legacy_difficulty,
+					}
+				: null,
 		primaryFamily: row.primary_family,
 		families: JSON.parse(row.families_json) as string[],
 		products: JSON.parse(row.products_json) as string[],

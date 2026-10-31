@@ -2,6 +2,15 @@ import { HttpError } from '../../http';
 import { getPractice } from './queries';
 import { catalogQuery, catalogSearch, type CatalogQuery } from './v2-filters';
 import { catalogSummary, legacyDetail, typedDetail, type CatalogRow, type RevisionBodyRow } from './v2-projection';
+import {
+	CATALOG_FROM,
+	CATALOG_COLUMNS,
+	LEGACY_FILTERS,
+	LEGACY_FACET_GROUPS,
+	emptyLegacyFacets,
+	legacyFacetsSql,
+	type LegacyFacet,
+} from './legacy-discovery';
 
 function filters(query: CatalogQuery) {
 	const conditions: string[] = [];
@@ -15,6 +24,21 @@ function filters(query: CatalogQuery) {
 	if (query.type) {
 		conditions.push('v.content_type = ?');
 		bindings.push(query.type);
+	}
+	for (const [key, column] of [
+		['categoryId', 'bp.category_id'],
+		['featureId', 'bp.feature_id'],
+	] as const) {
+		if (query[key]) {
+			conditions.push(`${column} = ?`);
+			bindings.push(query[key]);
+		}
+	}
+	for (const { key, column } of LEGACY_FILTERS) {
+		if (query[key]) {
+			conditions.push(`${column} = ?`);
+			bindings.push(query[key]);
+		}
 	}
 	for (const kind of ['family', 'product', 'outcome'] as const) {
 		if (query[kind]) {
@@ -34,9 +58,9 @@ export async function listCatalog(db: D1DatabaseSession, url: URL) {
 	const order = query.sort === 'newest' ? 'v.modified_at DESC, v.practice_id ASC' : 'v.title COLLATE NOCASE ASC, v.practice_id ASC';
 	// One batch/snapshot for totals + page; never fetch bodies to list summaries.
 	const [count, page] = await db.batch<CatalogRow & { total: number }>([
-		db.prepare(`SELECT COUNT(*) AS total FROM PublishedCatalog v${where}`).bind(...bindings),
+		db.prepare(`SELECT COUNT(*) AS total FROM ${CATALOG_FROM}${where}`).bind(...bindings),
 		db
-			.prepare(`SELECT v.* FROM PublishedCatalog v${where} ORDER BY ${order} LIMIT ? OFFSET ?`)
+			.prepare(`SELECT ${CATALOG_COLUMNS} FROM ${CATALOG_FROM}${where} ORDER BY ${order} LIMIT ? OFFSET ?`)
 			.bind(...bindings, query.pageSize, (query.page - 1) * query.pageSize),
 	]);
 	const total = count.results[0].total;
@@ -59,7 +83,7 @@ export async function listCatalog(db: D1DatabaseSession, url: URL) {
 }
 export async function getCatalogEntry(db: D1DatabaseSession, url: URL) {
 	const id = Number(url.pathname.split('/').at(-1));
-	const row = await db.prepare('SELECT * FROM PublishedCatalog WHERE practice_id = ?').bind(id).first<CatalogRow>();
+	const row = await db.prepare(`SELECT ${CATALOG_COLUMNS} FROM ${CATALOG_FROM} WHERE v.practice_id = ?`).bind(id).first<CatalogRow>();
 	if (!row) throw new HttpError(404, 'Catalog entry not found');
 	if (row.revision_id === null) {
 		const practice = await getPractice(db, id);
@@ -84,24 +108,29 @@ export async function getCatalogEntry(db: D1DatabaseSession, url: URL) {
 }
 export async function catalogFacets(db: D1DatabaseSession, url: URL) {
 	const { where, bindings } = filters(catalogQuery(url));
-	const [types, taxa] = await db.batch<{ kind: string; slug: string; label: string; count: number }>([
+	const [types, taxa, legacy] = await db.batch<LegacyFacet & { kind: string; slug: string }>([
 		db
 			.prepare(
-				`SELECT v.content_type AS slug, COUNT(*) AS count FROM PublishedCatalog v${where} GROUP BY v.content_type ORDER BY v.content_type`,
+				`SELECT v.content_type AS slug, COUNT(*) AS count FROM ${CATALOG_FROM}${where} GROUP BY v.content_type ORDER BY v.content_type`,
 			)
 			.bind(...bindings),
 		db
 			.prepare(
-				`SELECT t.kind, t.slug, x.label, COUNT(*) AS count FROM PublishedCatalog v
+				`SELECT t.kind, t.slug, x.label, COUNT(*) AS count FROM ${CATALOG_FROM}
 			JOIN CatalogRevisionTaxa t ON t.revision_id = v.revision_id
 			JOIN CatalogTaxa x ON x.kind = t.kind AND x.slug = t.slug${where}
 			GROUP BY t.kind, t.slug, x.label ORDER BY t.kind, t.slug`,
 			)
 			.bind(...bindings),
+		db.prepare(legacyFacetsSql(where)).bind(...bindings),
 	]);
+	const legacyFacets = emptyLegacyFacets();
+	for (const group of LEGACY_FACET_GROUPS)
+		legacyFacets[group] = legacy.results.filter((row) => row.kind === group).map(({ value, label, count }) => ({ value, label, count }));
 	return {
 		success: true as const,
 		data: {
+			legacy: legacyFacets,
 			types: types.results.map(({ slug, count }) => ({ slug, count })),
 			families: taxa.results.filter((row) => row.kind === 'family').map(({ slug, label, count }) => ({ slug, label, count })),
 			products: taxa.results.filter((row) => row.kind === 'product').map(({ slug, label, count }) => ({ slug, label, count })),

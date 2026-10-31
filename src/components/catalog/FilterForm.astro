@@ -2,13 +2,15 @@
 import type { CatalogQuery } from '../../modules/catalog/v2-filters';
 import type { catalogFacets } from '../../modules/catalog/v2-queries';
 import { TYPE_LABELS } from '../../content/presentation';
+import { PRACTICE_FILTER_GROUPS } from '../../modules/catalog/filter-presentation';
 interface Props {
 	query: CatalogQuery;
 	facets: Awaited<ReturnType<typeof catalogFacets>>['data'];
+	registry: Awaited<ReturnType<typeof catalogFacets>>['data'];
 	action?: string;
 	familyLocked?: boolean;
 }
-const { query, facets, action = '/catalog', familyLocked = false } = Astro.props;
+const { query, facets, registry, action = '/catalog', familyLocked = false } = Astro.props;
 const groups = [
 	{ key: 'family', label: 'Product family', options: facets.families },
 	{ key: 'product', label: 'Product', options: facets.products },
@@ -16,6 +18,7 @@ const groups = [
 	{ key: 'outcome', label: 'Desired outcome', options: facets.outcomes },
 ] as const;
 const visibleGroups = groups.filter((group) => (!familyLocked || group.key !== 'family') && (group.options.length > 0 || query[group.key]));
+const practiceGroups = PRACTICE_FILTER_GROUPS.filter((group) => facets.legacy[group.group].length > 0 || query[group.key]);
 ---
 
 <form method="get" action={action} class="filters" role="search" aria-label="Search and filter guidance">
@@ -23,11 +26,36 @@ const visibleGroups = groups.filter((group) => (!familyLocked || group.key !== '
 		Search guidance
 		<input name="q" type="search" value={query.q} placeholder="A product, problem, or pattern…" maxlength="400" autocomplete="off" />
 	</label>
+	{practiceGroups.length > 0 && (
+		<fieldset class="practice-filters">
+			<legend>Practice filters</legend>
+			<div class="filter-grid">
+				{practiceGroups.map(({ key, group, label, empty }) => (
+					<label>
+						{label}
+						<select name={key}>
+							<option value="">{empty}</option>
+							{query[key] && !facets.legacy[group].some((option) => option.value === query[key]) && (
+								<option value={query[key]} selected>
+									{registry.legacy[group].find((option) => option.value === query[key])?.label ?? query[key]} (0)
+								</option>
+							)}
+							{facets.legacy[group].map((option) => (
+								<option value={option.value} selected={query[key] === option.value}>
+									{option.label} ({option.count})
+								</option>
+							))}
+						</select>
+					</label>
+				))}
+			</div>
+		</fieldset>
+	)}
 	<details
 		class="filter-disclosure"
 		open={visibleGroups.some((group) => query[group.key]) || query.sort !== 'title' || query.pageSize !== 20}
 	>
-		<summary>Filters & sort</summary>
+		<summary>More filters & sort</summary>
 		<div class="filter-grid">
 			{visibleGroups.map(({ key, label, options }) => (
 				<label>

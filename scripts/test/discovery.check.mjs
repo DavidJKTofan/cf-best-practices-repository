@@ -41,6 +41,18 @@ test('WebMCP is optional and preserves the old read-only tool alongside bounded 
 	assert.equal(calls[1].options.method, undefined);
 	assert.equal(calls[1].options.body, undefined);
 	for (const input of [[], null, { q: 3 }, { page: 0 }, { pageSize: 51 }]) await assert.rejects(tools[1].execute(input));
+	await tools[1].execute({ categoryId: 5, featureId: 7, domain: 'Security', level: 'Recommended', impact: 'High', difficulty: 'Easy' });
+	for (const [key, value] of Object.entries({
+		categoryId: '5',
+		featureId: '7',
+		domain: 'Security',
+		level: 'Recommended',
+		impact: 'High',
+		difficulty: 'Easy',
+	}))
+		assert.equal(calls.at(-1).url.searchParams.get(key), value);
+	for (const input of [{ categoryId: 0 }, { featureId: '7' }, { featureId: 2147483648 }, { difficulty: 4 }])
+		await assert.rejects(tools[1].execute(input));
 });
 test('all OpenAPI references resolve locally; discoverable operation IDs are unique', async () => {
 	const documents = new Map();

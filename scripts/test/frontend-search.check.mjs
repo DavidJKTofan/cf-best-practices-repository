@@ -158,9 +158,20 @@ test('live search keeps bounded server-side GET filtering and resets page on cat
 	assert.equal(url.searchParams.get('q'), 'D1');
 	assert.equal(url.searchParams.has('page'), false);
 	h.form.action = 'https://catalog.example.com/families/cloudflare-one';
+	for (const pair of [
+		['categoryId', '5'],
+		['featureId', '7'],
+		['domain', 'Security'],
+		['level', 'Recommended'],
+		['impact', 'High'],
+		['difficulty', 'Easy'],
+	])
+		h.form.values.push(pair);
 	h.form.values.push(['product', 'access']);
 	assert.equal(h.searchUrl(h.form).pathname, '/families/cloudflare-one');
 	assert.equal(h.searchUrl(h.form).searchParams.get('product'), 'access');
+	for (const [key, value] of h.form.values.filter(([key]) => key !== 'page'))
+		assert.equal(h.searchUrl(h.form).searchParams.get(key), value);
 });
 
 test('text input debounces; changing a dropdown requests updated SSR results immediately', () => {

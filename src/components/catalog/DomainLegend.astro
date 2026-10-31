@@ -1,0 +1,22 @@
+---
+import type { LegacyFacet } from '../../modules/catalog/legacy-discovery';
+interface Props {
+	domains: LegacyFacet[];
+}
+const { domains } = Astro.props;
+---
+
+{domains.length > 0 && (
+	<div class="domain-legend" aria-label="Domain color legend">
+		<span>Domain colors</span>
+		<ul role="list">
+			{domains.map((domain) => (
+				<li>
+					<span class="classification-label" data-domain={domain.value}>
+						{domain.label}
+					</span>
+				</li>
+			))}
+		</ul>
+	</div>
+)}

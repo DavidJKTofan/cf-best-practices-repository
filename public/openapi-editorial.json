@@ -3,7 +3,7 @@
 	"info": {
 		"title": "Cloudflare Field Guide — protected editorial API",
 		"version": "1.0.0",
-		"description": "Local Phase 4 implementation; not deployed. Every route requires a verified Cloudflare Access identity and explicit private EditorialRoles grants. JSON mutations are same-origin only, bounded to 64 KiB, and durably idempotent. No public read API writes or self-service role grants. Role provisioning and live Access policy require owner approval."
+		"description": "Protected typed editorial workflow. Every route requires a verified Cloudflare Access identity and explicit private EditorialRoles grants; deployment alone grants no roles. JSON mutations are same-origin only, bounded to 64 KiB, and durably idempotent. No public read API writes or self-service role grants. Role provisioning and live Access policy require owner approval."
 	},
 	"servers": [{ "url": "/" }],
 	"security": [{ "AccessAssertion": [] }],

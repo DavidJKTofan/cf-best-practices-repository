@@ -1,0 +1,27 @@
+---
+import type { loadListingPage } from '../../modules/catalog/listing-page';
+import { activeFilters } from '../../modules/catalog/filter-presentation';
+import { catalogSearch } from '../../modules/catalog/v2-filters';
+interface Props {
+	state: Awaited<ReturnType<typeof loadListingPage>>;
+}
+const { query, registry, base, family } = Astro.props.state;
+const selected = activeFilters(query, registry, Boolean(family));
+const without = (key: (typeof selected)[number]['key']) => {
+	const params = new URLSearchParams(catalogSearch({ ...query, [key]: '', page: 1 }));
+	if (family) params.delete('family');
+	return `${base}${params.size ? `?${params}` : ''}`;
+};
+---
+
+{selected.length > 0 && (
+	<nav class="active-filters" aria-label="Active filters">
+		<span>Filtered by</span>
+		{selected.map((filter) => (
+			<a href={without(filter.key)} aria-label={`Remove ${filter.label}`}>
+				<span>{filter.label}</span>
+				<span aria-hidden="true">×</span>
+			</a>
+		))}
+	</nav>
+)}

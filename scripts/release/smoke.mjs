@@ -60,6 +60,7 @@ export async function runSmoke({
 	nativeId,
 	expectedRevision,
 	expectCacheHits = false,
+	allowCloudflareBmCookie = false,
 	fetcher = fetch,
 	maxBytes = 2 * 1024 * 1024,
 }) {
@@ -70,6 +71,7 @@ export async function runSmoke({
 	assert.equal(nativeId === undefined, expectedRevision === undefined, 'Native ID and expected revision must be supplied together');
 	if (expectedRevision !== undefined) expectedRevision = id(expectedRevision);
 	assert.ok(Number.isSafeInteger(maxBytes) && maxBytes > 0);
+	assert.equal(typeof allowCloudflareBmCookie, 'boolean');
 	const checks = [];
 	async function check(name, action) {
 		try {
@@ -97,7 +99,16 @@ export async function runSmoke({
 		const { response } = result;
 		assert.equal(response.status, 200);
 		assert.ok(response.headers.get('Content-Type')?.startsWith(type));
-		assert.equal(response.headers.has('Set-Cookie'), false);
+		if (allowCloudflareBmCookie) {
+			// Live edge-only opt-in, not proof of cookie provenance. Worker cookie guards stay strict.
+			const cookies = response.headers.getSetCookie();
+			assert.equal(response.headers.has('Set-Cookie'), cookies.length > 0);
+			for (const cookie of cookies) {
+				assert.match(cookie.split(';', 1)[0], /^__cf_bm=[\x21\x23-\x2B\x2D-\x3A\x3C-\x5B\x5D-\x7E]+$/);
+				// Reject folded cookies without misreading the comma in an Expires date.
+				assert.doesNotMatch(cookie, /,\s*[^=;,\s]+\s*=/);
+			}
+		} else assert.equal(response.headers.has('Set-Cookie'), false);
 		if (type !== 'application/json') {
 			assert.doesNotMatch(response.headers.get('X-Robots-Tag') ?? '', /\b(noindex|none)\b/i);
 		} else assert.match(response.headers.get('X-Robots-Tag') ?? '', /noindex/i);
@@ -230,6 +241,7 @@ export async function runSmoke({
 		ok: checks.every((c) => c.ok),
 		checks,
 		cacheHitsRequired: expectCacheHits,
+		responseCookiePolicy: allowCloudflareBmCookie ? '__cf_bm-only' : 'none',
 		remoteWrites: 'none',
 		notVerified: [
 			'authenticated-roles-and-retries',
@@ -251,6 +263,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
 				'native-id': { type: 'string' },
 				'expected-revision': { type: 'string' },
 				'expect-cache-hits': { type: 'boolean' },
+				'allow-cloudflare-bm-cookie': { type: 'boolean' },
 			},
 		});
 		assert.ok(values.base, 'An explicitly approved target --base is required');
@@ -261,12 +274,13 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
 			nativeId: values['native-id'],
 			expectedRevision: values['expected-revision'],
 			expectCacheHits: values['expect-cache-hits'] ?? false,
+			allowCloudflareBmCookie: values['allow-cloudflare-bm-cookie'] ?? false,
 		});
 		console.log(JSON.stringify(result, null, 2));
 		if (!result.ok) process.exitCode = 1;
 	} catch {
 		console.error(
-			'FAIL read-only smoke check. Supply an approved HTTPS --base; optional --canonical, --native-id plus --expected-revision, --expect-cache-hits. No writes performed.',
+			'FAIL read-only smoke check. Supply an approved HTTPS --base; optional --canonical, --native-id plus --expected-revision, --expect-cache-hits, --allow-cloudflare-bm-cookie. No writes performed.',
 		);
 		process.exitCode = 1;
 	}

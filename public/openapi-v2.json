@@ -19,6 +19,12 @@
 					{ "$ref": "#/components/parameters/product" },
 					{ "$ref": "#/components/parameters/outcome" },
 					{ "$ref": "#/components/parameters/type" },
+					{ "$ref": "#/components/parameters/categoryId" },
+					{ "$ref": "#/components/parameters/featureId" },
+					{ "$ref": "#/components/parameters/domain" },
+					{ "$ref": "#/components/parameters/level" },
+					{ "$ref": "#/components/parameters/impact" },
+					{ "$ref": "#/components/parameters/difficulty" },
 					{ "name": "sort", "in": "query", "schema": { "type": "string", "enum": ["title", "newest"], "default": "title" } },
 					{ "name": "page", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 10000, "default": 1 } },
 					{ "name": "pageSize", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 50, "default": 20 } }
@@ -63,14 +69,20 @@
 		"/api/v2/facets": {
 			"get": {
 				"operationId": "readCatalogFacets",
-				"summary": "Populated types and revision-scoped taxonomy counts",
-				"description": "GET/HEAD/OPTIONS. Counts apply all effective filters together (conjunctive, not self-excluding). No empty taxonomy hubs or draft-only associations. Pagination and sort are ignored. Legacy imports remain unclassified and contribute only to legacy-practice type counts. Browser TTL 60 seconds; shared practices purge tag, because counts change with publication.",
+				"summary": "Populated types, taxonomy and recorded practice classifications",
+				"description": "GET/HEAD/OPTIONS. Counts apply all effective filters together (conjunctive, not self-excluding). No empty taxonomy hubs or draft-only associations. Pagination and sort are ignored. Legacy imports contribute recorded classifications under data.legacy, not inferred native family/product/outcome assignments. Native entries have no legacy classification. Browser TTL 60 seconds; shared practices purge tag, because counts change with publication.",
 				"parameters": [
 					{ "$ref": "#/components/parameters/q" },
 					{ "$ref": "#/components/parameters/family" },
 					{ "$ref": "#/components/parameters/product" },
 					{ "$ref": "#/components/parameters/outcome" },
-					{ "$ref": "#/components/parameters/type" }
+					{ "$ref": "#/components/parameters/type" },
+					{ "$ref": "#/components/parameters/categoryId" },
+					{ "$ref": "#/components/parameters/featureId" },
+					{ "$ref": "#/components/parameters/domain" },
+					{ "$ref": "#/components/parameters/level" },
+					{ "$ref": "#/components/parameters/impact" },
+					{ "$ref": "#/components/parameters/difficulty" }
 				],
 				"responses": {
 					"200": {
@@ -85,6 +97,27 @@
 	},
 	"components": {
 		"parameters": {
+			"categoryId": {
+				"name": "categoryId",
+				"in": "query",
+				"description": "Recorded legacy category ID from data.legacy.categories facets. Digits only; leading zeros normalize away. Invalid IDs are ignored; unknown valid IDs match nothing. Does not classify native entries.",
+				"schema": { "type": "integer", "minimum": 1, "maximum": 2147483647 }
+			},
+			"featureId": {
+				"name": "featureId",
+				"in": "query",
+				"description": "Recorded legacy feature ID from data.legacy.features facets; same normalization as categoryId. Not a native product slug.",
+				"schema": { "type": "integer", "minimum": 1, "maximum": 2147483647 }
+			},
+			"domain": {
+				"name": "domain",
+				"in": "query",
+				"description": "Recorded legacy Domain, case-sensitive; v1 uses area instead.",
+				"schema": { "enum": ["Security", "Performance", "Reliability", "General"] }
+			},
+			"level": { "name": "level", "in": "query", "schema": { "enum": ["Mandatory", "Recommended", "Optional", "Situational"] } },
+			"impact": { "name": "impact", "in": "query", "schema": { "enum": ["High", "Medium", "Low"] } },
+			"difficulty": { "name": "difficulty", "in": "query", "schema": { "enum": ["Easy", "Medium", "Complex"] } },
 			"q": {
 				"name": "q",
 				"in": "query",
@@ -109,6 +142,43 @@
 			}
 		},
 		"schemas": {
+			"LegacyClassification": {
+				"type": "object",
+				"additionalProperties": false,
+				"description": "Recorded schemaVersion 0 classification, not native taxonomy or applicability. Individual null fields mean unrecorded; the entire property is null for native entries.",
+				"required": ["domain", "categoryId", "category", "featureId", "feature", "level", "impact", "difficulty"],
+				"properties": {
+					"domain": { "type": ["string", "null"] },
+					"categoryId": { "type": ["integer", "null"] },
+					"category": { "type": ["string", "null"] },
+					"featureId": { "type": ["integer", "null"] },
+					"feature": { "type": ["string", "null"] },
+					"level": { "type": ["string", "null"] },
+					"impact": { "type": ["string", "null"] },
+					"difficulty": { "type": ["string", "null"] }
+				}
+			},
+			"LegacyFacet": {
+				"type": "object",
+				"required": ["value", "label", "count"],
+				"properties": {
+					"value": { "type": "string", "description": "String ID or recorded enum value" },
+					"label": { "type": "string" },
+					"count": { "type": "integer", "minimum": 1 }
+				}
+			},
+			"LegacyFacets": {
+				"type": "object",
+				"required": ["categories", "features", "domains", "levels", "impacts", "difficulties"],
+				"properties": {
+					"categories": { "type": "array", "items": { "$ref": "#/components/schemas/LegacyFacet" } },
+					"features": { "type": "array", "items": { "$ref": "#/components/schemas/LegacyFacet" } },
+					"domains": { "type": "array", "items": { "$ref": "#/components/schemas/LegacyFacet" } },
+					"levels": { "type": "array", "items": { "$ref": "#/components/schemas/LegacyFacet" } },
+					"impacts": { "type": "array", "items": { "$ref": "#/components/schemas/LegacyFacet" } },
+					"difficulties": { "type": "array", "items": { "$ref": "#/components/schemas/LegacyFacet" } }
+				}
+			},
 			"Lifecycle": {
 				"type": "object",
 				"additionalProperties": false,
@@ -133,6 +203,7 @@
 					"title",
 					"summary",
 					"lifecycle",
+					"legacyClassification",
 					"primaryFamily",
 					"families",
 					"products",
@@ -154,6 +225,7 @@
 					"title": { "type": "string" },
 					"summary": { "type": "string", "maxLength": 500 },
 					"lifecycle": { "$ref": "#/components/schemas/Lifecycle" },
+					"legacyClassification": { "oneOf": [{ "$ref": "#/components/schemas/LegacyClassification" }, { "type": "null" }] },
 					"primaryFamily": { "type": ["string", "null"] },
 					"families": { "$ref": "#/components/schemas/Slugs" },
 					"products": { "$ref": "#/components/schemas/Slugs" },
@@ -184,7 +256,7 @@
 					"pages": { "type": "integer" },
 					"query": {
 						"type": "object",
-						"description": "Effective q, family, product, outcome, type, sort, page, pageSize; absent string filters are empty strings."
+						"description": "Effective q, family, product, outcome, type, categoryId, featureId, domain, level, impact, difficulty, sort, page, pageSize. Filter IDs are strings; absent string filters are empty strings."
 					},
 					"links": {
 						"type": "object",
@@ -209,8 +281,9 @@
 					"success": { "const": true },
 					"data": {
 						"type": "object",
-						"required": ["types", "families", "products", "outcomes"],
+						"required": ["types", "families", "products", "outcomes", "legacy"],
 						"properties": {
+							"legacy": { "$ref": "#/components/schemas/LegacyFacets" },
 							"types": { "type": "array", "items": { "$ref": "#/components/schemas/Facet" } },
 							"families": { "type": "array", "items": { "$ref": "#/components/schemas/Facet" } },
 							"products": { "type": "array", "items": { "$ref": "#/components/schemas/Facet" } },

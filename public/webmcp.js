@@ -41,6 +41,12 @@ if (context?.registerTool) {
 						family: { type: 'string', maxLength: 80 },
 						product: { type: 'string', maxLength: 80 },
 						outcome: { type: 'string', maxLength: 80 },
+						categoryId: { type: 'integer', minimum: 1, maximum: 2147483647 },
+						featureId: { type: 'integer', minimum: 1, maximum: 2147483647 },
+						domain: { type: 'string', enum: ['Security', 'Performance', 'Reliability', 'General'] },
+						level: { type: 'string', enum: ['Mandatory', 'Recommended', 'Optional', 'Situational'] },
+						impact: { type: 'string', enum: ['High', 'Medium', 'Low'] },
+						difficulty: { type: 'string', enum: ['Easy', 'Medium', 'Complex'] },
 						type: {
 							type: 'string',
 							enum: ['legacy-practice', 'recommendation', 'rule-policy', 'reference-architecture', 'implementation-guide'],
@@ -53,13 +59,15 @@ if (context?.registerTool) {
 				async execute(input) {
 					if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('Expected catalog filters');
 					const url = new URL('/api/v2/entries', location.origin);
-					for (const key of ['q', 'family', 'product', 'outcome', 'type']) {
+					for (const key of ['q', 'family', 'product', 'outcome', 'type', 'domain', 'level', 'impact', 'difficulty']) {
 						if (input[key] !== undefined && typeof input[key] !== 'string') throw new Error(`${key} must be a string`);
 						if (input[key]) url.searchParams.set(key, [...input[key]].slice(0, key === 'q' ? 200 : 80).join(''));
 					}
 					for (const [key, max] of [
 						['page', 10000],
 						['pageSize', 50],
+						['categoryId', 2147483647],
+						['featureId', 2147483647],
 					]) {
 						if (input[key] !== undefined) {
 							if (!Number.isInteger(input[key]) || input[key] < 1 || input[key] > max) throw new Error(`Invalid ${key}`);

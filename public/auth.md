@@ -16,7 +16,7 @@ The dashboard retains the retry key in this tab's session storage, including acr
 
 This application does not operate an OAuth authorization server, issue agent credentials, or offer self-service registration. Ask the repository owner for dashboard access if you need to contribute. Cloudflare Access policy is configured separately from this public read interface.
 
-## Typed editorial workflow (local implementation, not deployed)
+## Typed editorial workflow (explicit private roles required)
 
 The `/dashboard/editorial` workbench uses the [protected editorial API schema](/openapi-editorial.json). A valid Access JWT alone is insufficient: private, owner-provisioned editor/reviewer/publisher grants are required. Unknown actors, including the local write bypass without a grant, are denied. Caller role headers and arbitrary JWT claims never confer a role.
 
