@@ -108,7 +108,9 @@ const title = status === 404 ? 'Guidance not found' : status === 503 ? 'Guidance
 				<p class="lede">{entry.schemaVersion === 0 ? entry.body.description : entry.summary}</p>
 				<div class="reading-overview">
 					<EntryRatings entry={entry} />
-					<a href={`${path}.md`}>Read as Markdown ↗</a>
+					<a href={`${path}.md`} target="_blank" rel="noopener noreferrer">
+						Read as Markdown ↗
+					</a>
 				</div>
 			</header>
 			<div class="reading-grid">

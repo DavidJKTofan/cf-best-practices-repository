@@ -810,31 +810,13 @@ tr.row.is-expanded td {
 	color: var(--badge-green-fg);
 }
 
-/* Recommendation level: colored dot + text */
+/* Recommendation levels stay neutral; semantic colors belong to Domain badges. */
 .col-level {
 	white-space: nowrap;
 }
 
-td.col-level::before {
-	content: '';
-	display: inline-block;
-	width: 8px;
-	height: 8px;
-	margin-right: 7px;
-	border-radius: 50%;
-	background: var(--dot, var(--gray));
-	vertical-align: 1px;
-}
-
 .level-mandatory {
-	--dot: var(--red);
 	font-weight: 600;
-}
-.level-recommended {
-	--dot: var(--accent);
-}
-.level-situational {
-	--dot: var(--blue);
 }
 
 /* Impact & difficulty: three-bar meter + text */

@@ -153,6 +153,19 @@ describe('crawlable public documents', () => {
 		expect(markdown).not.toContain('## Configuration guidance');
 	});
 
+	it('keeps framework-independent Markdown and footer links in safe new tabs', async () => {
+		const html = await (await call(`/practices/${ID}`)).text();
+		const footer = html.match(/<footer\b[^>]*>[\s\S]*?<\/footer>/)[0];
+		const links = [...footer.matchAll(/<a\b[^>]*>/g)].map(([tag]) => tag);
+		links.push(html.match(/<a\b[^>]*class="btn btn-link format-link"[^>]*>/)[0]);
+		expect(links).toHaveLength(4);
+		for (const link of links) {
+			expect(link).toContain('target="_blank"');
+			expect(link).toContain('rel="noopener noreferrer"');
+		}
+		expect(html).toContain('<a href="/">All practices</a>');
+	});
+
 	it('never turns legacy non-HTTP source data into active links or structured citations', async () => {
 		await env.DB.prepare('INSERT INTO BestPractices (practice_id, title, description, domain, source_reference) VALUES (?, ?, ?, ?, ?)')
 			.bind(ID + 1, 'Legacy source', 'Review the recorded source.', 'Security', 'javascript:alert(1)')

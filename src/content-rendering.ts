@@ -131,7 +131,7 @@ export function practiceHtml(p: Practice): string {
 		],
 	})}
 	</head><body><a class="skip-link" href="#practice">Skip to practice</a>
-	<header class="site-header"><div class="container header-inner"><a class="brand" href="/"><img src="/favicon.png" width="28" height="28" alt=""><span class="brand-name">${SITE_NAME}</span></a><div class="header-actions"><a class="btn btn-link format-link" href="${path}.md">Markdown</a><button class="icon-btn theme-switch" type="button" aria-label="Toggle color theme" title="Toggle color theme"><span class="icon-moon" aria-hidden="true">☾</span><span class="icon-sun" aria-hidden="true">☀</span></button></div></div></header>
+	<header class="site-header"><div class="container header-inner"><a class="brand" href="/"><img src="/favicon.png" width="28" height="28" alt=""><span class="brand-name">${SITE_NAME}</span></a><div class="header-actions"><a class="btn btn-link format-link" href="${path}.md" target="_blank" rel="noopener noreferrer">Markdown</a><button class="icon-btn theme-switch" type="button" aria-label="Toggle color theme" title="Toggle color theme"><span class="icon-moon" aria-hidden="true">☾</span><span class="icon-sun" aria-hidden="true">☀</span></button></div></div></header>
 	<main id="practice" class="container practice-page"><nav aria-label="Breadcrumb"><a href="/">All practices</a> / Practice ${p.practice_id}</nav>
 	<article><header><p class="eyebrow">${escapeHtml(p.domain)} / ${escapeHtml(p.category_name)}</p><h1>${escapeHtml(p.title)}</h1><p class="practice-lede">${escapeHtml(p.description)}</p></header>
 	<dl class="practice-facts">${[
@@ -144,5 +144,5 @@ export function practiceHtml(p: Practice): string {
 		.join('')}</dl>
 	${section('Prerequisites', p.prerequisites)}${configurationHtml(p)}${section('Notes', p.notes)}
 	<section><h2>Sources and freshness</h2><ul>${source ? `<li><a href="${escapeHtml(source)}">Source documentation</a></li>` : '<li>No source URL recorded.</li>'}${feature ? `<li><a href="${escapeHtml(feature)}">${escapeHtml(p.feature_name)} documentation</a></li>` : ''}</ul><p>${updated ? `Updated <time datetime="${updated}">${updated.slice(0, 10)}</time>` : 'Update date not recorded.'}</p></section>
-	</article></main><footer class="site-footer"><div class="container"><p>${DISCLAIMER}</p><p><a href="/api-docs">API documentation</a> · <a href="/llms.txt">Agent index</a> · <a href="/#practice-${p.practice_id}">Open in interactive table</a></p></div></footer></body></html>`;
+	</article></main><footer class="site-footer"><div class="container"><p>${DISCLAIMER}</p><p><a href="/api-docs" target="_blank" rel="noopener noreferrer">API documentation</a> · <a href="/llms.txt" target="_blank" rel="noopener noreferrer">Agent index</a> · <a href="/#practice-${p.practice_id}" target="_blank" rel="noopener noreferrer">Open in interactive table</a></p></div></footer></body></html>`;
 }

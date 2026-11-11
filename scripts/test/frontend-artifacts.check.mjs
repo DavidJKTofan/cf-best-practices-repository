@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { checkPublicArtifacts, files } from '../release/artifacts.mjs';
+import { elements, attr } from '../release/markup.mjs';
 
 test('built configuration retains the cache split, scoped assets, and no incidental bindings', async () => {
 	const config = JSON.parse(await readFile('dist/server/wrangler.json', 'utf8'));
@@ -34,4 +35,34 @@ test('reference and static interfaces retain the owner-approved system font stac
 		assert.ok(css.includes("--mono: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;"));
 		assert.ok(!/@font-face|fonts\.googleapis|fonts\.gstatic/.test(css));
 	}
+});
+
+test('built static HTML keeps Markdown and footer links in safe new tabs', async () => {
+	for (const path of ['index.html', 'api-docs.html', 'dashboard.html', 'dashboard/editorial.html']) {
+		const nodes = elements(await readFile(`dist/client/${path}`, 'utf8'));
+		const footer = nodes.find((node) => node.tagName === 'footer');
+		assert.ok(footer, path);
+		const links = [
+			...elements(footer).filter((node) => node.tagName === 'a'),
+			...nodes.filter((node) => node.tagName === 'a' && /\.md(?:[?#]|$)/.test(attr(node, 'href') ?? '')),
+		];
+		for (const link of links) {
+			assert.equal(attr(link, 'target'), '_blank', `${path}: ${attr(link, 'href')}`);
+			const rel = (attr(link, 'rel') ?? '').split(/\s+/);
+			assert.ok(rel.includes('noopener') && rel.includes('noreferrer'), path);
+		}
+	}
+});
+
+test('Level styling is neutral in both interfaces while Domain colors remain distinct', async () => {
+	const astro = await readFile('src/styles/field-guide.css', 'utf8');
+	const level = astro.match(/\.level-label\s*\{([^}]+)\}/)?.[1];
+	assert.ok(level);
+	assert.match(level, /--label-bg:\s*var\(--badge-gray-bg\)/);
+	assert.match(level, /--label-fg:\s*var\(--badge-gray-fg\)/);
+	assert.doesNotMatch(astro, /\.level-label\[data-level|--level-required/);
+	for (const domain of ['Security', 'Performance', 'Reliability']) assert.ok(astro.includes(`[data-domain='${domain}']`));
+	const legacy = await readFile('public/style.css', 'utf8');
+	assert.doesNotMatch(legacy, /td\.col-level::before|--dot:/);
+	for (const domain of ['security', 'performance', 'reliability']) assert.ok(legacy.includes(`.domain-${domain}`));
 });

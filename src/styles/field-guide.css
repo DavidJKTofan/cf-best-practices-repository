@@ -20,8 +20,6 @@
 	--badge-green-fg: #046c4e;
 	--badge-gray-bg: #eef0f3;
 	--badge-gray-fg: #3f4654;
-	--level-required-bg: #fff1e5;
-	--level-required-fg: #9a3412;
 	--font: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 	--mono: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
 	--gutter: clamp(1rem, 3vw, 2.5rem);
@@ -47,8 +45,6 @@
 	--badge-green-fg: #6ee7b7;
 	--badge-gray-bg: rgb(156 163 175 / 0.14);
 	--badge-gray-fg: #d1d5db;
-	--level-required-bg: rgb(255 173 102 / 0.14);
-	--level-required-fg: #ffad66;
 }
 @media (prefers-color-scheme: dark) {
 	:root:not([data-theme='light']) {
@@ -72,8 +68,6 @@
 		--badge-green-fg: #6ee7b7;
 		--badge-gray-bg: rgb(156 163 175 / 0.14);
 		--badge-gray-fg: #d1d5db;
-		--level-required-bg: rgb(255 173 102 / 0.14);
-		--level-required-fg: #ffad66;
 	}
 }
 *,
@@ -451,17 +445,10 @@ ol {
 	color: var(--muted);
 	font-weight: 400;
 }
-.level-label[data-level='Mandatory'] {
-	--label-bg: var(--level-required-bg);
-	--label-fg: var(--level-required-fg);
-}
-.level-label[data-level='Recommended'] {
-	--label-bg: var(--badge-green-bg);
-	--label-fg: var(--badge-green-fg);
-}
-.level-label[data-level='Situational'] {
-	--label-bg: var(--badge-blue-bg);
-	--label-fg: var(--badge-blue-fg);
+/* Reserve semantic colors for Domains; every recommendation level stays neutral. */
+.level-label {
+	--label-bg: var(--badge-gray-bg);
+	--label-fg: var(--badge-gray-fg);
 }
 .domain-legend {
 	gap: 0.5rem 0.75rem;

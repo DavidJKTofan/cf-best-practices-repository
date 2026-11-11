@@ -2,6 +2,8 @@
 
 **2026-10-31 — procedure prepared; operational sign-offs remain open.** The [v1.1 evidence](../rollout-2026-10-31-v1.1.md) reconciles the observed release, not a tested recovery artifact or complete Phase 6 acceptance. This checklist authorizes no remote operation. Deployment-approval automation is deferred at the owner's request, not implemented by this work.
 
+**2026-11-11 update:** owner-requested [new-tab/neutral-Level follow-up is deployed at 100%](../rollout-2026-11-11-v1.2.md#new-tab-and-neutral-level-follow-up) from uncommitted local changes on v1.2. Latest unchanged smoke passes **10/10**, including denial, and 30 live homepage/catalog/practice 1 combinations pass. **Practice 18 still serves old cached HTML referencing missing CSS; UI freshness is not fully verified.** Earlier dashboard 429 and first-follow-up homepage failures did not recur in the latest smoke, but causes remain unknown. Deployment/smoke completion does not waive the cache discrepancy or close the gates below. No release-related D1, cache-policy or security change was made.
+
 ## Owners and exit evidence
 
 Roles below identify who must act, not newly appointed people or production grants. The repository owner must name the actual operators/reviewers and privately acknowledge responsibility before the corresponding journey. Missing assignments are blockers; an AI self-review is not independent acceptance.
@@ -55,9 +57,13 @@ On failure, record the last-good version and scope, preserve diagnostics/receipt
 - [x] Feature-specific smoke implemented locally, exercised against synthetic/built responses and the existing live target.
 - [x] Recovery manifest requirements, role ownership, monitoring windows and acceptance/stop criteria documented.
 - [x] Owner-requested documentation/probe release `2e9c50c` committed/deployed; exact-commit CI and ten-group post-deploy filter/HIT smoke pass. This is scoped deployment approval, not complete operational acceptance.
+- [x] Owner-approved v1.2 source/serving-version mapping, public read checks and 30 live viewport/theme combinations recorded; no D1 or security change.
+- [x] Owner-requested new-tab/neutral-Level deployment and latest 10/10 unchanged smoke recorded, with dirty-source provenance and 30 targeted live combinations.
+- [ ] Practice 18 stale HTML/missing CSS discrepancy investigated, approved remediation applied and targeted freshness checks passing.
+- [ ] Earlier anonymous dashboard 429 and intermittent homepage smoke failures investigated/dispositioned; latest passing smoke alone does not establish their causes.
 - [ ] Actual operator/reviewer assignments and owner acceptance reconciled privately.
 - [ ] Exact deployed recovery bytes retained/matched and runtime recovery independently accepted.
 - [ ] Monitoring thresholds/baseline/windows completed and signed off.
 - [ ] Staging, authenticated/purge journeys and broader certification/publication gates closed with evidence.
 
-**Next:** retain the [release evidence](../rollout-2026-10-31-v1.1.md), assign the release observer/recovery operator/independent reviewers and reconcile the recorded scope/limits acceptance. Then plan the specifically approved private provenance/recovery and staging journeys. No further commit, push, redeployment or remote write follows automatically from this checklist.
+**Next:** investigate the stale practice 18 response and missing stylesheet with the owner before separately approved remediation; rerun targeted UI and unchanged smoke checks afterward. Retain the [current release evidence](../rollout-2026-11-11-v1.2.md), disposition earlier intermittent failures, assign the release observer/recovery operator/independent reviewers and reconcile scope/limits acceptance. Then plan the specifically approved private provenance/recovery and staging journeys. No further commit, push, purge, redeployment, security change or remote write follows automatically from this checklist.

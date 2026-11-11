@@ -156,6 +156,47 @@ const attr = (node, name) => node.attrs?.find((a) => a.name === name)?.value;
 const elements = (node) => [node, ...(node.childNodes ?? []).flatMap(elements)];
 const nodeText = (node) => node.value ?? (node.childNodes ?? []).map(nodeText).join('');
 
+test('Markdown reading links and every footer link open safely in new tabs without changing ordinary navigation', async () => {
+	for (const path of [
+		'/',
+		'/catalog?q=origin&pageSize=1',
+		'/families/cloudflare-one',
+		'/practices/18',
+		...PILOT_IDS.map((id) => `/practices/${id}`),
+		'/api-docs',
+		'/practices/2147483647',
+	]) {
+		const { text } = await read(path);
+		const nodes = elements(parse(text));
+		const footer = nodes.find((node) => node.tagName === 'footer');
+		assert.ok(footer, path);
+		const footerLinks = elements(footer).filter((node) => node.tagName === 'a');
+		assert.ok(footerLinks.length >= 2, path);
+		const markdownLinks = nodes.filter((node) => node.tagName === 'a' && /\.md(?:[?#]|$)/.test(attr(node, 'href') ?? ''));
+		assert.ok(markdownLinks.length > 0, path);
+		for (const link of [...footerLinks, ...markdownLinks]) {
+			assert.equal(attr(link, 'target'), '_blank', `${path}: ${attr(link, 'href')}`);
+			const rel = (attr(link, 'rel') ?? '').split(/\s+/);
+			assert.ok(rel.includes('noopener') && rel.includes('noreferrer'), path);
+		}
+		const home = nodes.find((node) => node.tagName === 'a' && ['wordmark', 'brand'].includes(attr(node, 'class')));
+		assert.ok(home, path);
+		assert.equal(attr(home, 'target'), undefined, 'Main navigation stays in the current tab');
+		if (path.startsWith('/catalog?')) {
+			const markdown = footerLinks.find((node) => attr(node, 'data-markdown-link') !== undefined);
+			assert.equal(attr(markdown, 'href'), '/catalog.md?q=origin&pageSize=1');
+			const title = nodes.find((node) => attr(node, 'class') === 'entry-title');
+			assert.equal(
+				attr(
+					elements(title).find((node) => node.tagName === 'a'),
+					'target',
+				),
+				undefined,
+			);
+		}
+	}
+});
+
 test('compact result rows lead with full summaries, group topics and expose labeled level badges without import boilerplate', async () => {
 	const query = 'level=Recommended&pageSize=5';
 	const page = await (await server.fetch(`/api/v2/entries?${query}`)).json();

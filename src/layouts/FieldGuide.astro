@@ -77,14 +77,20 @@ const structured = schema ? JSON.stringify(schema).replace(/</g, '\\u003c') : nu
 		<footer class="page-width footer">
 			<p>{DISCLAIMER}</p>
 			<div class="footer-links">
-				<a href="/llms.txt">Agent index</a>
-				<a href="/openapi.json">OpenAPI</a>
+				<a href="/llms.txt" target="_blank" rel="noopener noreferrer">
+					Agent index
+				</a>
+				<a href="/openapi.json" target="_blank" rel="noopener noreferrer">
+					OpenAPI
+				</a>
 				{markdown && (
-					<a href={markdown} data-markdown-link>
+					<a href={markdown} target="_blank" rel="noopener noreferrer" data-markdown-link>
 						Read as Markdown
 					</a>
 				)}
-				<a href="https://github.com/DavidJKTofan/cf-best-practices-repository#disclaimer">Disclaimer & liability</a>
+				<a href="https://github.com/DavidJKTofan/cf-best-practices-repository#disclaimer" target="_blank" rel="noopener noreferrer">
+					Disclaimer & liability
+				</a>
 			</div>
 			<small>Not affiliated with or endorsed by Cloudflare. Cloudflare and related marks belong to Cloudflare, Inc.</small>
 		</footer>

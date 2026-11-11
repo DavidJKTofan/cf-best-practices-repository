@@ -20,7 +20,8 @@
 		<a class="skip-link" href="#docs">Skip to documentation</a>
 		<header class="site-header">
 			<div class="container header-inner">
-				<a class="brand" href="/">Cloudflare L7 Best Practices</a><a href="/api-docs.md">Markdown</a>
+				<a class="brand" href="/">Cloudflare L7 Best Practices</a
+				><a href="/api-docs.md" target="_blank" rel="noopener noreferrer">Markdown</a>
 			</div>
 		</header>
 		<main id="docs" class="container practice-page">
@@ -36,8 +37,8 @@
 					<h2>Content formats</h2>
 					<p>
 						Send <code>Accept: text/markdown</code> to <code>/</code> or <code>/practices/{id}</code>. Browsers receive HTML by default;
-						negotiated responses send <code>Vary: Accept</code>. Explicit Markdown URLs are <a href="/index.md">/index.md</a> and
-						<code>/practices/{id}.md</code>.
+						negotiated responses send <code>Vary: Accept</code>. Explicit Markdown URLs are
+						<a href="/index.md" target="_blank" rel="noopener noreferrer">/index.md</a> and <code>/practices/{id}.md</code>.
 					</p>
 					<p>
 						Start with <a href="/llms.txt">/llms.txt</a> for links, or <a href="/llms-full.txt">/llms-full.txt</a> for all practice details.
@@ -116,7 +117,8 @@ curl -H 'Accept: text/markdown' https://db.automatic-demo.com/</code></pre>
 						<code>.md</code> URLs. Full exports stream all current published entries; v1 remains legacy-only. Browse
 						<a href="/catalog">URL-based search</a> and populated <code>/families/{slug}</code> hubs without JavaScript; append
 						<code>.md</code> to either listing path for the same effective result page. No query flag exposes drafts, and there are no v2
-						write routes. See the <a href="/openapi-v2.json">v2 schema</a> or <a href="/api-docs.md">complete Markdown contract</a>.
+						write routes. See the <a href="/openapi-v2.json">v2 schema</a> or
+						<a href="/api-docs.md" target="_blank" rel="noopener noreferrer">complete Markdown contract</a>.
 					</p>
 					<p>
 						Summaries and details include <code>lifecycle</code>: <code>state</code> is <code>active</code>, <code>deprecated</code>, or
@@ -139,9 +141,9 @@ curl -H 'Accept: text/markdown' https://db.automatic-demo.com/</code></pre>
 					</p>
 					<p>
 						Public reads need no authentication. Writes exist only under the Access-protected dashboard; see
-						<a href="/auth.md">authentication guidance</a>. The local, not-yet-deployed typed workflow has a separate
-						<a href="/openapi-editorial.json">protected editorial schema</a> and requires private role grants in addition to login. It is
-						not part of the public read tools.
+						<a href="/auth.md" target="_blank" rel="noopener noreferrer">authentication guidance</a>. The local, not-yet-deployed typed
+						workflow has a separate <a href="/openapi-editorial.json">protected editorial schema</a> and requires private role grants in
+						addition to login. It is not part of the public read tools.
 					</p>
 				</section>
 				<section>
@@ -160,7 +162,10 @@ curl -H 'Accept: text/markdown' https://db.automatic-demo.com/</code></pre>
 			</article>
 		</main>
 		<footer class="site-footer">
-			<div class="container"><a href="/">Browse all practices</a> · <a href="/llms.txt">Agent index</a></div>
+			<div class="container">
+				<a href="/" target="_blank" rel="noopener noreferrer">Browse all practices</a> ·
+				<a href="/llms.txt" target="_blank" rel="noopener noreferrer">Agent index</a>
+			</div>
 		</footer>
 	</body>
 </html>
