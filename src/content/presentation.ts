@@ -88,7 +88,7 @@ export function readingSections(content: TypedContent): ReadingSection[] {
 }
 
 export const TYPE_LABELS: Record<string, string> = {
-	'legacy-practice': 'Legacy practice',
+	'legacy-practice': 'Best practice',
 	recommendation: 'Recommendation',
 	'rule-policy': 'Rule / policy',
 	'reference-architecture': 'Reference architecture',

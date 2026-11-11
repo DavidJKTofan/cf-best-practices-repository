@@ -1,7 +1,7 @@
 ---
 import { env } from 'cloudflare:workers';
 import FieldGuide from '../layouts/FieldGuide.astro';
-import EntrySummary from '../components/catalog/EntrySummary.astro';
+import EntryList from '../components/catalog/EntryList.astro';
 import { catalogFacets, listCatalog } from '../modules/catalog/v2-queries';
 import { SITE_URL, SITE_DESCRIPTION, SITE_NAME } from '../content-rendering';
 const db = env.DB.withSession('first-primary');
@@ -92,13 +92,11 @@ const [page, facets, anchors] = await Promise.all([
 				</h2>
 				<a href="/catalog">Browse all {page.total} entries →</a>
 			</div>
-			{page.data.map((entry) => (
-				<EntrySummary entry={entry} headingLevel="h3" />
-			))}
+			<EntryList entries={page.data} headingLevel="h3" />
 		</section>
 	)}
 	<details class="legacy-index">
-		<summary>Legacy practice links</summary>
+		<summary>Practice quick links</summary>
 		<p>Old #practice-ID links remain valid. Follow a title to its complete canonical page.</p>
 		<ul>
 			{anchors.results.map((entry) => (

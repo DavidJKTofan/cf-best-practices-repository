@@ -6,6 +6,8 @@ A sourced repository of Cloudflare recommendations, architectures, and implement
 
 ## Features
 
+**Local UI follow-up — 2026-11-11 (not deployed):** compact desktop columns for guidance, topics and ratings; labeled Level badges; cleaner practice pages without repeated import/migration labels. Full summaries, prerequisites, sources and honest freshness remain available. [Verification and limits](docs/phase6/compact-catalog-ui.md).
+
 **Deployed recorded-filter restoration:** Category, Feature, Domain, Level, Impact and Difficulty filters, rounded Domain-color labels/legend, neutral Category/Feature pills and removable filter chips use recorded practice data without inferring native taxonomy or changing the database. See [filter restoration and verification](docs/phase6/filter-restoration.md).
 
 - Server-rendered `/catalog` search, conjunctive filters, sorting, and pagination (20 summaries by default, maximum 50), using ordinary GET forms with progressive debounced search/immediate filters
@@ -28,6 +30,8 @@ The Astro frontend follows the earlier UI's neutral palette, compact typography,
 ```
 
 Layouts adapt from mobile/tablet to desktop and 4K, with bounded listing/reading widths rather than monitor-wide prose. Recorded practice filters are visible; additional native taxonomy/type/sort controls and small-screen contents are collapsible. Domain pills retain the earlier Security/red, Performance/blue, Reliability/green and General/gray palette with text labels and a legend; Category/Feature pills stay neutral. Empty configuration, notes, related-content, family/outcome and unused filter sections are omitted from server HTML, including their headings and contents links; selected zero-result filters stay available to clear individually. Sources, caveats, canonical links and honest freshness metadata are preserved. See the [local UI verification](docs/phase6/frontend-simplification.md), [filter follow-up](docs/phase6/filter-restoration.md) and separate [current production checks](docs/rollout-2026-10-31-v1.1.md).
+
+Shared result lists use aligned guidance/topic/Level/Impact/Difficulty columns when their container is at least 68rem wide, and stacked rows below that size. Summaries are not line-clamped or shortened. Level badges are separately labeled: Mandatory/orange, Recommended/green, Situational/blue and Optional/gray; these are recorded recommendations, not official universal policy. Practice pages show classification and ratings once, then prerequisites (when recorded), configuration and notes. Import implementation details are not reader-facing labels; unknown review dates and applicability qualifications remain in Sources & freshness. No ratings or native taxonomy are inferred. See the [local compact-layout checks](docs/phase6/compact-catalog-ui.md).
 
 Keep this README and [AGENTS.md](AGENTS.md) up to date when changing setup, behavior or design rules.
 

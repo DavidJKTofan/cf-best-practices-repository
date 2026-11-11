@@ -2,6 +2,7 @@
 import type { CatalogSummary } from '../../modules/catalog/v2-projection';
 import { TYPE_LABELS } from '../../content/presentation';
 import EntryLabels from './EntryLabels.astro';
+import EntryRatings from './EntryRatings.astro';
 interface Props {
 	entry: CatalogSummary;
 	headingLevel?: 'h2' | 'h3';
@@ -10,37 +11,26 @@ const { entry, headingLevel: Heading = 'h2' } = Astro.props;
 ---
 
 <article class="entry-row" data-family={entry.primaryFamily ?? 'legacy'}>
-	<div>
-		<p class="eyebrow">
-			{entry.lifecycle.state !== 'active' && <strong>{entry.lifecycle.state} / </strong>}
-			{TYPE_LABELS[entry.type] ?? entry.type}
-			{entry.products.length > 0 && <span> / {entry.products.join(' + ')}</span>}
-		</p>
-		<EntryLabels entry={entry} />
+	<div class="entry-main">
+		{(entry.schemaVersion !== 0 || entry.lifecycle.state !== 'active') && (
+			<p class="eyebrow">
+				{entry.lifecycle.state !== 'active' && <strong>{entry.lifecycle.state} / </strong>}
+				{entry.schemaVersion !== 0 && (TYPE_LABELS[entry.type] ?? entry.type)}
+				{entry.products.length > 0 && <span> / {entry.products.join(' + ')}</span>}
+			</p>
+		)}
 		<Heading class="entry-title">
 			<a href={entry.canonicalPath}>{entry.title}</a>
 		</Heading>
-		<p>{entry.summary}</p>
-		{entry.legacyClassification &&
-			[entry.legacyClassification.level, entry.legacyClassification.impact, entry.legacyClassification.difficulty].some(Boolean) && (
-				<p class="entry-ratings">
-					{[
-						['Level', entry.legacyClassification.level],
-						['Impact', entry.legacyClassification.impact],
-						['Difficulty', entry.legacyClassification.difficulty],
-					]
-						.filter(([, value]) => value)
-						.map(([label, value]) => (
-							<span>
-								<span class="rating-label">{label}:</span> {value}
-							</span>
-						))}
-				</p>
-			)}
-		<p class="entry-meta">
-			{entry.schemaVersion === 0
-				? 'Legacy import · Applicability and fact review not classified'
-				: `${entry.evidence === 'public-docs' ? 'Public documentation reviewed' : entry.evidence} · ${entry.factVerifiedAt ?? 'Fact-verification date not recorded'}`}
-		</p>
+		<p class="entry-description">{entry.summary}</p>
 	</div>
+	<EntryLabels entry={entry} />
+	<EntryRatings entry={entry} />
+	{entry.schemaVersion !== 0 && (
+		<p class="entry-evidence entry-meta">
+			{entry.evidence === 'public-docs' ? 'Public documentation reviewed' : entry.evidence}
+			<br />
+			{entry.factVerifiedAt ?? 'Fact-verification date not recorded'}
+		</p>
+	)}
 </article>

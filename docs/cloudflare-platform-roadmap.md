@@ -2,7 +2,7 @@
 
 ## Status and current checkpoint
 
-- Last updated: **2026-10-31**.
+- Last updated: **2026-11-11**.
 - Repository: `cf-best-practices-repository`.
 - Planning baseline: `1aaacbc18455153e77f1114c2f420ebc10bea564` (`v0.8`).
 - Active phase: **Phase 6 — Deployed-release reconciliation and operational acceptance**.
@@ -14,6 +14,7 @@
 - Deployed UX follow-up: Category/Feature/Domain/Level/Impact/Difficulty controls, labeled Domain-color pills/legend and removable active filters shipped in `53e1f32`. **60** original local viewport/theme/script-mode combinations remain distinct from subsequent targeted production checks. Data was preserved; read-time legacy classification is not native taxonomy. [Contract and local/live verification](phase6/filter-restoration.md). The owner-requested smoke/documentation/recovery-criteria follow-up is committed/deployed; deployment-approval mechanism work remains deferred and unchanged.
 - Next action: retain the completed release evidence; assign the recovery operator, release observer and independent reviewers and reconcile scope/limits acceptance. Independently review Phase 2–6 contracts/source claims and exact source/artifact/dependencies, including live filtering and optimizer-statistics preservation. Reconcile a matching deployed compatible recovery artifact; version IDs or v0.8 source built with current dependencies are not proof. Agree monitoring thresholds/windows and approve exact staging resources/Access design before their journeys. Authenticated/purge and native-publication gates remain separate. No D1, grant/publication, recovery or security change was performed in this deployment.
 - No commit, push, deployment, remote database write, or account/security-policy change is authorized by this roadmap.
+- Local UI follow-up **2026-11-11**, not deployed: compact desktop guidance/topic/rating columns, labeled Level badges and cleaner detail pages without repeated import/migration labels; unknown review/applicability information remains in Sources & freshness. **225 runtime + 39 frontend** pass; **70** targeted local Chrome viewport/theme/script-mode combinations remain distinct from production release evidence. [Changes, checks and limits](phase6/compact-catalog-ui.md). Immediate next action is owner visual review, then commit/release only on explicit request; existing operational gates above remain open.
 - Prior frontend-simplification verification: **28/28 built checks**, **213/213 runtime tests**, clean Astro check/build, strict types/import/discovery, offline content integrity and generated-config deploy dry run. Targeted Chrome matrix: **90 combinations**, light/dark at 320–3840px. Rebuilt Wrangler follow-up: **179 HTTP checks**, including all 119 legacy pages; Explorer captured **181 successful root invocations, zero failed spans/5xx/error logs**, with expected 4xx rejections. [Evidence and limits](phase6/frontend-simplification.md); no rollout approval implied.
 - Pre-release follow-up (historical): **36 frontend + 213 runtime**, **7 boundary + 3 discovery**, **9 Python + 7 Node** release checks and **40 local runtime/recovery assertions** passed before release. The earlier Level 5/5 scanner and `/catalog`/v2 404 findings describe the old deployment, not current production. [Historical evidence](phase6/scalability-and-production-readiness.md) and [superseding rollout](rollout-2026-10-31.md).
 
@@ -529,6 +530,15 @@ After milestones/before stopping: update evidenced checkboxes, active task/files
 - Transport: HTTPS push/GitHub CLI lacked credentials; existing SSH authentication verified the same repository/remote commit without changing Git configuration. Existing Workers Builds performed deployment; no direct Wrangler deployment was used.
 - Scope/limits: application/public assets/dependencies/schema/bindings unchanged; no D1 write/export, grant/publication, recovery or security change. CI, deployment and targeted reads are evidence, not a completed monitoring window, exact-artifact recovery, independent review, staging or authenticated purge gate.
 - Evidence handoff: README/AGENTS, this checkpoint, release/filter/runbook and operational records updated after verification. Subsequent evidence-only commits retain the application baseline; their live metadata must be checked separately. Next work is operator/reviewer assignment and specifically approved recovery/staging/authenticated/monitoring journeys, not automatic native publication.
+
+#### 2026-11-11 — Owner-requested compact catalog and cleaner practice pages
+
+- Status: completed locally, not committed, staged or deployed. Owner requested denser desktop scanning, Level labels and removal of repeated legacy labels; existing server-rendered/minimal/no-JavaScript design retained.
+- Changes/files: new shared `EntryList.astro`/`EntryRatings.astro`, catalog/home/summary/detail components, type presentation label and `field-guide.css`; two built regression tests and absent-prerequisite assertions. README, AGENTS and [compact-layout evidence](phase6/compact-catalog-ui.md) synchronized.
+- Decisions: container-based aligned desktop columns, full summaries (no clipping), separate labeled Level chips, ratings once on detail pages, prerequisites only when present. Reader labels no longer expose migration mechanics; source URLs, data/API type/schema, unknown dates and applicability caveats remain intact.
+- Verification: **225 runtime + 39 frontend**, strict types/**7 boundary + 3 discovery**, content/four twice-run patches/**5 + 5 Python**, **9 Python + 12 Node** release checks, generated types, clean Astro check/build and generated-config deploy dry run pass. **70** targeted Chrome viewport/theme/script-mode combinations, native/live mobile/desktop filtering, keyboard focus and mobile copy/fallback checks pass. First three desktop rows **231px → 101px** with full summaries; one local LCP **461ms**, CLS **0.00**. Not full accessibility/cross-browser/production certification.
+- Remote effects: none. Ephemeral public-seed/pilot data only; no ordinary-local/private/remote DB change, commit/push/deploy, publication/grant or security/cache policy change. Prior production evidence is unchanged.
+- Blockers/exact next action: owner visual review of the local preview, then commit/release only after explicit approval. Existing independent review, exact-artifact recovery, staging, signed mutations/purge and operational acceptance remain open.
 
 ## 13. Repository integration
 

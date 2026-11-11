@@ -1,6 +1,6 @@
 ---
 import FieldGuide from '../../layouts/FieldGuide.astro';
-import EntrySummary from './EntrySummary.astro';
+import EntryList from './EntryList.astro';
 import FilterForm from './FilterForm.astro';
 import DomainLegend from './DomainLegend.astro';
 import ActiveFilters from './ActiveFilters.astro';
@@ -111,11 +111,11 @@ const title = missing ? 'Family not found' : familyLabel || 'Catalog';
 							<a href={documentPath(Astro.url)}>Retry this search</a>
 						</div>
 					) : result?.data.length ? (
-						result.data.map((entry) => <EntrySummary entry={entry} />)
+						<EntryList entries={result.data} />
 					) : (
 						<div class="empty-state">
 							<h2>No matching guidance</h2>
-							<p>Try a broader phrase or remove a filter. Imported legacy practices have not been assigned to product families.</p>
+							<p>Try a broader phrase or remove a filter. Some practices do not have a product family assigned.</p>
 							<a href={base}>Reset this search</a>
 						</div>
 					)}

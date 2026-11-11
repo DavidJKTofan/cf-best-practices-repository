@@ -4,6 +4,7 @@ import FieldGuide from '../../layouts/FieldGuide.astro';
 import ReadingSections from '../../components/content/ReadingSections.astro';
 import EntrySummary from '../../components/catalog/EntrySummary.astro';
 import EntryLabels from '../../components/catalog/EntryLabels.astro';
+import EntryRatings from '../../components/catalog/EntryRatings.astro';
 import { getCatalogEntry, listCatalog } from '../../modules/catalog/v2-queries';
 import { readingSections, TYPE_LABELS } from '../../content/presentation';
 import { SITE_URL, modifiedDate, safeUrl } from '../../content-rendering';
@@ -36,6 +37,7 @@ const sources = entry?.sources.filter((s) => safeUrl(s.url)) ?? [];
 const legacy = entry?.schemaVersion === 0 ? entry.body : null;
 const configurations = legacy ? configurationSections(legacy) : [];
 const hasNotes = Boolean(legacy?.notes?.trim());
+const hasPrerequisites = Boolean(legacy?.prerequisites?.trim());
 const title = status === 404 ? 'Guidance not found' : status === 503 ? 'Guidance temporarily unavailable' : entry!.title;
 ---
 
@@ -104,9 +106,10 @@ const title = status === 404 ? 'Guidance not found' : status === 503 ? 'Guidance
 					</aside>
 				)}
 				<p class="lede">{entry.schemaVersion === 0 ? entry.body.description : entry.summary}</p>
-				<p>
+				<div class="reading-overview">
+					<EntryRatings entry={entry} />
 					<a href={`${path}.md`}>Read as Markdown ↗</a>
-				</p>
+				</div>
 			</header>
 			<div class="reading-grid">
 				<aside class="contents">
@@ -118,7 +121,7 @@ const title = status === 404 ? 'Guidance not found' : status === 503 ? 'Guidance
 							))}
 							{legacy && (
 								<>
-									<a href="#legacy-context">Applicability</a>
+									{hasPrerequisites && <a href="#legacy-context">Before you begin</a>}
 									{configurations.map((section) => (
 										<a href={`#${section.kind}`}>{section.heading}</a>
 									))}
@@ -134,34 +137,12 @@ const title = status === 404 ? 'Guidance not found' : status === 503 ? 'Guidance
 				<article class="reading-body">
 					{legacy ? (
 						<>
-							<section id="legacy-context">
-								<h2>Applicability</h2>
-								<p class="entry-meta">
-									This imported entry has not been converted into a typed revision. Its recorded guidance is preserved; family, maturity,
-									and fact-verification metadata remain unknown.
-								</p>
-								<dl class="facts">
-									{[
-										['Domain', legacy.domain],
-										['Category', legacy.category_name],
-										['Feature', legacy.feature_name],
-										['Recommendation level', legacy.recommendation_level],
-										['Impact', legacy.impact_level],
-										['Difficulty', legacy.difficulty_level],
-									].map(([label, value]) => (
-										<div>
-											<dt>{label}</dt>
-											<dd>{value ?? 'Not rated'}</dd>
-										</div>
-									))}
-								</dl>
-								{legacy.prerequisites?.trim() && (
-									<>
-										<h3>Prerequisites</h3>
-										<p class="prose-text">{legacy.prerequisites}</p>
-									</>
-								)}
-							</section>
+							{hasPrerequisites && (
+								<section id="legacy-context">
+									<h2>Before you begin</h2>
+									<p class="prose-text">{legacy.prerequisites}</p>
+								</section>
+							)}
 							{configurations.map((section) => (
 								<section id={section.kind}>
 									<h2>{section.heading}</h2>
@@ -203,7 +184,7 @@ const title = status === 404 ? 'Guidance not found' : status === 503 ? 'Guidance
 								{sources.map((source) => (
 									<li>
 										<a href={source.url} rel="noreferrer">
-											{source.title}
+											{legacy && source.title === 'Recorded legacy source' ? 'Source documentation' : source.title}
 										</a>
 									</li>
 								))}
@@ -228,6 +209,11 @@ const title = status === 404 ? 'Guidance not found' : status === 503 ? 'Guidance
 								<dd>{entry.reviewDueAt ?? 'Not recorded'}</dd>
 							</div>
 						</dl>
+						{legacy && (
+							<p class="entry-meta">
+								Product family and maturity are not classified. Confirm current applicability in the source documentation before use.
+							</p>
+						)}
 						<p class="entry-meta">A documentation review is not evidence of deployment testing or of your account's entitlement.</p>
 					</section>
 					{related.length > 0 && (

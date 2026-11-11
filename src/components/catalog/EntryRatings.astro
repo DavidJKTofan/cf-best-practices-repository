@@ -1,0 +1,34 @@
+---
+import type { CatalogSummary } from '../../modules/catalog/v2-projection';
+interface Props {
+	entry: CatalogSummary;
+}
+const { entry } = Astro.props;
+const classification = entry.legacyClassification;
+const ratings = classification
+	? [
+			{ label: 'Level', value: classification.level },
+			{ label: 'Impact', value: classification.impact },
+			{ label: 'Difficulty', value: classification.difficulty },
+		].filter((rating) => rating.value)
+	: [];
+---
+
+{ratings.length > 0 && (
+	<dl class="entry-ratings" aria-label="Practice ratings">
+		{ratings.map(({ label, value }) => (
+			<div data-rating={label}>
+				<dt>{label}</dt>
+				<dd>
+					{label === 'Level' ? (
+						<span class="classification-label level-label" data-level={value}>
+							{value}
+						</span>
+					) : (
+						value
+					)}
+				</dd>
+			</div>
+		))}
+	</dl>
+)}

@@ -156,6 +156,64 @@ const attr = (node, name) => node.attrs?.find((a) => a.name === name)?.value;
 const elements = (node) => [node, ...(node.childNodes ?? []).flatMap(elements)];
 const nodeText = (node) => node.value ?? (node.childNodes ?? []).map(nodeText).join('');
 
+test('compact result rows lead with full summaries, group topics and expose labeled level badges without import boilerplate', async () => {
+	const query = 'level=Recommended&pageSize=5';
+	const page = await (await server.fetch(`/api/v2/entries?${query}`)).json();
+	const { text } = await read(`/catalog?${query}`);
+	const nodes = elements(parse(text));
+	const rows = nodes.filter((node) => node.tagName === 'article' && attr(node, 'class') === 'entry-row');
+	assert.equal(rows.length, page.data.length);
+	assert.ok(nodes.some((node) => attr(node, 'class')?.includes('entry-list--rated')));
+	assert.ok(!/Legacy practice|Legacy import|fact review not classified/.test(nodeText(parse(text))));
+	for (const [index, row] of rows.entries()) {
+		const entry = page.data[index];
+		const children = elements(row);
+		assert.equal(nodeText(children.find((node) => attr(node, 'class') === 'entry-description')), entry.summary);
+		assert.equal(children.find((node) => node.tagName === 'a')?.attrs.find((a) => a.name === 'href')?.value, entry.canonicalPath);
+		assert.ok(!children.some((node) => attr(node, 'class') === 'eyebrow'));
+		const ratings = children.find((node) => node.tagName === 'dl' && attr(node, 'class') === 'entry-ratings');
+		assert.ok(ratings);
+		for (const [label, key] of [
+			['Level', 'level'],
+			['Impact', 'impact'],
+			['Difficulty', 'difficulty'],
+		]) {
+			const group = elements(ratings).find((node) => attr(node, 'data-rating') === label);
+			assert.equal(nodeText(elements(group).find((node) => node.tagName === 'dt')), label);
+			assert.equal(nodeText(elements(group).find((node) => node.tagName === 'dd')).trim(), entry.legacyClassification[key]);
+		}
+		assert.ok(children.some((node) => attr(node, 'data-level') === 'Recommended'));
+	}
+	const native = (await read('/families/cloudflare-one')).text;
+	assert.ok(!native.includes('entry-list--rated') && !native.includes('class="entry-ratings"'));
+	assert.match(native, /Public documentation reviewed/);
+	assert.match(native, /Reference architecture/);
+});
+
+test('practice reading pages show ratings once, keep prerequisites and truthful freshness, and avoid migration jargon', async () => {
+	const { data } = await (await server.fetch('/api/practices')).json();
+	const row = data.find((entry) => entry.prerequisites?.trim() && entry.recommendation_level);
+	const { text } = await read(`/practices/${row.practice_id}`);
+	const nodes = elements(parse(text));
+	assert.equal(nodes.filter((node) => attr(node, 'class') === 'entry-ratings').length, 1);
+	assert.ok(nodes.some((node) => attr(node, 'data-level') === row.recommendation_level));
+	assert.ok(nodeText(parse(text)).includes(row.prerequisites));
+	assert.match(text, /Best practice \/ No\./);
+	assert.ok(!/Legacy practice|Legacy import|typed revision|Recorded legacy source/.test(text));
+	const sources = nodes.find((node) => node.tagName === 'section' && attr(node, 'id') === 'sources');
+	const factDate = elements(sources).find(
+		(node) => node.tagName === 'div' && node.childNodes?.some((child) => child.tagName === 'dt' && nodeText(child) === 'Fact verified'),
+	);
+	assert.equal(nodeText(elements(factDate).find((node) => node.tagName === 'dd')), 'Not recorded');
+	assert.match(nodeText(sources), /Product family and maturity are not classified/);
+	assert.match(nodeText(sources), /not evidence of deployment testing/);
+	// Data/API compatibility is unaffected by presentation labels.
+	const detail = await (await server.fetch(`/api/v2/entries/${row.practice_id}`)).json();
+	assert.equal(detail.data.type, 'legacy-practice');
+	assert.equal(detail.data.schemaVersion, 0);
+	assert.equal(detail.data.factVerifiedAt, null);
+});
+
 test('six visible practice filters match recorded data, show labels/legend and keep selected empty filters removable', async () => {
 	const { data } = await (await server.fetch('/api/practices')).json();
 	const fields = {
@@ -258,6 +316,7 @@ test('legacy reading sections and contents omit absent fields without duplicatin
 			assert.ok(!nodes.some((n) => ['notes', 'related'].includes(attr(n, 'id'))));
 			assert.ok(!text.includes('href="#related"') && !text.includes('href="#notes"'));
 			assert.ok(!text.includes('<h2>Configuration</h2>') && !text.includes('<h3>Prerequisites</h3>'));
+			assert.ok(!text.includes('id="legacy-context"') && !text.includes('href="#legacy-context"'));
 			const md = (await read('/practices/1.md')).text;
 			assert.equal(md.includes('## Example expression'), Boolean(expression?.trim()));
 			assert.equal(md.includes('## Configuration guidance'), Boolean(configuration?.trim() && configuration !== expression));

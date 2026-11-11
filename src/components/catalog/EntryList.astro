@@ -1,0 +1,32 @@
+---
+import type { CatalogSummary } from '../../modules/catalog/v2-projection';
+import EntrySummary from './EntrySummary.astro';
+interface Props {
+	entries: CatalogSummary[];
+	headingLevel?: 'h2' | 'h3';
+}
+const { entries, headingLevel = 'h2' } = Astro.props;
+const hasRatings = entries.some((entry) => {
+	const c = entry.legacyClassification;
+	return c && (c.level || c.impact || c.difficulty);
+});
+---
+
+{entries.length > 0 && (
+	<div class:list={['entry-list', { 'entry-list--rated': hasRatings }]}>
+		<div class="entry-list-head" aria-hidden="true">
+			<span>Guidance</span>
+			<span>{hasRatings ? 'Topic' : 'Evidence & freshness'}</span>
+			{hasRatings && (
+				<div class="entry-rating-head">
+					<span>Level</span>
+					<span>Impact</span>
+					<span>Difficulty</span>
+				</div>
+			)}
+		</div>
+		{entries.map((entry) => (
+			<EntrySummary entry={entry} headingLevel={headingLevel} />
+		))}
+	</div>
+)}
